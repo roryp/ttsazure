@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class TtsController {
@@ -17,20 +18,24 @@ public class TtsController {
     private static final Logger logger = LoggerFactory.getLogger(TtsController.class);
     
     private static final List<String> AVAILABLE_VOICES = List.of(
-        "alloy", "echo", "fable", "onyx", "nova", "shimmer"
+        "alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer", "verse"
     );
 
     private final OpenAIService openAIService;
     private final AudioStore audioStore;
+    private final VibeService vibeService;
 
-    public TtsController(OpenAIService openAIService, AudioStore audioStore) {
+    public TtsController(OpenAIService openAIService, AudioStore audioStore, VibeService vibeService) {
         this.openAIService = openAIService;
         this.audioStore = audioStore;
+        this.vibeService = vibeService;
     }
 
     @GetMapping("/")
     public String index(Model model) {
         model.addAttribute("voices", AVAILABLE_VOICES);
+        model.addAttribute("vibes", vibeService.getRandomVibes(6));
+        model.addAttribute("allVibes", vibeService.getAllVibes());
         return "index";
     }
 
@@ -39,12 +44,11 @@ public class TtsController {
             @RequestParam String text,
             @RequestParam(required = false) String style,
             @RequestParam String voice,
-            @RequestParam(required = false, defaultValue = "1.0") double speed,
             @RequestParam(required = false, defaultValue = "mp3") String format,
             Model model) {
         
-        logger.info("TTS request: voice={}, style={}, speed={}, format={}, text_length={}", 
-                   voice, style, speed, format, text.length());
+        logger.info("TTS request: voice={}, style={}, format={}, text_length={}", 
+                   voice, style, format, text.length());
 
         try {
             // Validate input
@@ -66,13 +70,6 @@ public class TtsController {
                 model.addAttribute("warning", "Text was truncated to 1000 characters");
             }
 
-            // Validate speed parameter
-            if (speed < 0.25 || speed > 4.0) {
-                model.addAttribute("error", "Speed must be between 0.25 and 4.0");
-                model.addAttribute("voices", AVAILABLE_VOICES);
-                return "index";
-            }
-
             // Validate format parameter
             if (!format.equals("mp3") && !format.equals("wav") && !format.equals("opus")) {
                 model.addAttribute("error", "Invalid audio format. Supported: mp3, wav, opus");
@@ -81,7 +78,7 @@ public class TtsController {
             }
 
             // Generate speech
-            byte[] audioData = openAIService.generateSpeech(text, voice, style, speed, format);
+            byte[] audioData = openAIService.generateSpeech(text, voice, style, format);
             
             // Store audio
             String audioId = audioStore.store(audioData);
@@ -91,7 +88,6 @@ public class TtsController {
             model.addAttribute("lastText", text);
             model.addAttribute("lastVoice", voice);
             model.addAttribute("lastStyle", style);
-            model.addAttribute("lastSpeed", speed);
             model.addAttribute("lastFormat", format);
             model.addAttribute("audioId", audioId);
             model.addAttribute("audioSize", formatFileSize(audioData.length));
@@ -106,7 +102,6 @@ public class TtsController {
             model.addAttribute("lastText", text);
             model.addAttribute("lastVoice", voice);
             model.addAttribute("lastStyle", style);
-            model.addAttribute("lastSpeed", speed);
             model.addAttribute("lastFormat", format);
         }
 
@@ -164,6 +159,53 @@ public class TtsController {
     @ResponseBody
     public String health() {
         return "OK - Audio cache size: " + audioStore.size();
+    }
+
+    @GetMapping("/api/vibes")
+    @ResponseBody
+    public List<VibeService.Vibe> getVibes(@RequestParam(required = false, defaultValue = "6") int count) {
+        return vibeService.getRandomVibes(count);
+    }
+
+    @GetMapping("/api/vibe/{name}")
+    @ResponseBody
+    public ResponseEntity<VibeService.Vibe> getVibe(@PathVariable String name) {
+        return vibeService.getVibeByName(name)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/api/quick-tts")
+    @ResponseBody
+    public ResponseEntity<?> quickTts(
+            @RequestParam String text,
+            @RequestParam String voice,
+            @RequestParam(required = false) String style,
+            @RequestParam(required = false, defaultValue = "mp3") String format) {
+        
+        try {
+            if (text == null || text.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Text cannot be empty");
+            }
+
+            if (!AVAILABLE_VOICES.contains(voice)) {
+                return ResponseEntity.badRequest().body("Invalid voice selected");
+            }
+
+            // Generate speech
+            byte[] audioData = openAIService.generateSpeech(text, voice, style, format);
+            String audioId = audioStore.store(audioData);
+
+            return ResponseEntity.ok().body(Map.of(
+                    "audioId", audioId,
+                    "audioUrl", "/audio/" + audioId + "?format=" + format,
+                    "size", audioData.length
+            ));
+
+        } catch (Exception e) {
+            logger.error("Error generating quick TTS", e);
+            return ResponseEntity.internalServerError().body("Failed to generate voice: " + e.getMessage());
+        }
     }
 
     private String formatFileSize(long bytes) {

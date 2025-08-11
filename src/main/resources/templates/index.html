@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Azure OpenAI Text-to-Speech</title>
+    <title>Azure OpenAI TTS Audio Soundboard</title>
     <link rel="stylesheet" th:href="@{/styles.css}">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Azure OpenAI Text-to-Speech</h1>
+            <h1>Azure OpenAI TTS Audio Soundboard</h1>
             <p>Transform your text into natural-sounding speech using Azure OpenAI</p>
         </header>
 
@@ -28,31 +28,54 @@
 
         <!-- TTS Form -->
         <section class="tts-form">
-            <form method="post" action="/tts">
+            <!-- Voice Selection -->
+            <div class="voice-selection">
+                <h2>Choose Voice</h2>
+                <div class="voice-label-display" id="voiceDisplay">Voice: Select a voice</div>
+                <div class="voice-grid-new">
+                    <div th:each="voice : ${voices}" class="voice-button-new" th:data-voice="${voice}">
+                        <span th:text="${#strings.capitalize(voice)}"></span>
+                    </div>
+                    <div class="voice-button-new random-voice" data-voice="random">
+                        <span>Random</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vibe Selection -->
+            <div class="vibe-selection">
+                <h2>Choose Vibe</h2>
+                <div class="vibe-controls">
+                    <div class="vibe-grid">
+                        <div th:each="vibe : ${vibes}" class="vibe-button" th:data-vibe="${vibe.name}">
+                            <span th:text="${vibe.name}"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary shuffle-vibes">🎲 Shuffle Vibes</button>
+                </div>
+                
+                <div class="vibe-details">
+                    <div class="vibe-description">
+                        <h3>Description</h3>
+                        <div id="vibeDescription" class="description-content">Select a vibe to see the description</div>
+                    </div>
+                    <div class="vibe-script">
+                        <h3>Sample Script</h3>
+                        <div id="vibeScript" class="script-content">Select a vibe to see the sample script</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Text Input and Controls -->
+            <form method="post" action="/tts" id="ttsForm">
+                <input type="hidden" name="voice" id="selectedVoice" value="">
+                <input type="hidden" name="style" id="selectedStyle" value="">
+                
                 <div class="form-group">
                     <label for="text">Input Text:</label>
-                    <textarea id="text" name="text" rows="6" placeholder="Enter the text you want to convert to speech..." 
-                              maxlength="1000" required th:text="${lastText}"></textarea>
-                    <small class="char-counter">Maximum 1000 characters</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="style">Voice Style (optional):</label>
-                    <input type="text" id="style" name="style" placeholder="e.g., excited, calm, dramatic, whisper..." 
-                           th:value="${lastStyle}">
-                    <small>Choose the emotional tone: excited, calm, sad, angry, whisper, dramatic, friendly, professional, etc.</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="speed">Speech Speed:</label>
-                    <input type="range" id="speed" name="speed" min="0.25" max="4.0" step="0.1" 
-                           th:value="${lastSpeed != null ? lastSpeed : 1.0}">
-                    <div class="speed-display">
-                        <span>Slow (0.25x)</span>
-                        <span id="speed-value" th:text="${lastSpeed != null ? lastSpeed + 'x' : '1.0x'}">1.0x</span>
-                        <span>Fast (4.0x)</span>
-                    </div>
-                    <small>Adjust the speaking speed from very slow to very fast</small>
+                    <textarea id="text" name="text" rows="6" placeholder="Enter your own text or use a vibe script..." 
+                              maxlength="4000" required th:text="${lastText}"></textarea>
+                    <small class="char-counter">Maximum 4000 characters</small>
                 </div>
 
                 <div class="form-group">
@@ -62,23 +85,14 @@
                         <option value="wav" th:selected="${lastFormat == 'wav'}">WAV (High Quality)</option>
                         <option value="opus" th:selected="${lastFormat == 'opus'}">Opus (Small Size)</option>
                     </select>
-                    <small>Choose the audio format - MP3 for compatibility, WAV for quality, Opus for size</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Choose Voice:</label>
-                    <div class="voice-grid">
-                        <div th:each="voice : ${voices}" class="voice-option">
-                            <input type="radio" th:id="${voice}" name="voice" th:value="${voice}" 
-                                   th:checked="${voice == lastVoice}" required>
-                            <label th:for="${voice}" class="voice-label" th:text="${#strings.capitalize(voice)}"></label>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" th:text="${lastText != null} ? 'Regenerate Voice' : 'Generate Voice'">
-                        Generate Voice
+                    <button type="submit" class="btn btn-primary" id="generateBtn">
+                        🎵 Generate Voice
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="useVibeScriptBtn">
+                        📝 Use Vibe Script
                     </button>
                 </div>
             </form>
@@ -92,7 +106,6 @@
                 <div class="text-metadata">
                     <span><strong>Voice:</strong> <span th:text="${#strings.capitalize(lastVoice)}"></span></span>
                     <span th:if="${lastStyle}"><strong>Style:</strong> <span th:text="${lastStyle}"></span></span>
-                    <span th:if="${lastSpeed}"><strong>Speed:</strong> <span th:text="${lastSpeed} + 'x'"></span></span>
                     <span th:if="${lastFormat}"><strong>Format:</strong> <span th:text="${#strings.toUpperCase(lastFormat)}"></span></span>
                 </div>
             </section>
@@ -124,54 +137,172 @@
     </div>
 
     <script>
-        // Show loading indicator on form submission
-        document.querySelector('form').addEventListener('submit', function() {
-            document.getElementById('loading').style.display = 'flex';
+        // Global variables
+        let selectedVoice = '';
+        let selectedVibe = null;
+        let allVibes = /*[[${allVibes}]]*/ [];
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeVoiceButtons();
+            initializeVibeButtons();
+            initializeForm();
+            setupCharacterCounter();
         });
 
-        // Character counter
-        const textarea = document.getElementById('text');
-        const counter = document.querySelector('.char-counter');
-        
-        function updateCounter() {
-            const current = textarea.value.length;
-            const max = 1000;
-            counter.textContent = `${current}/${max} characters`;
+        // Voice selection functionality
+        function initializeVoiceButtons() {
+            const voiceButtons = document.querySelectorAll('.voice-button-new');
+            const voiceDisplay = document.getElementById('voiceDisplay');
             
-            if (current > max * 0.9) {
-                counter.style.color = '#e74c3c';
-            } else {
-                counter.style.color = '#666';
-            }
-        }
-        
-        textarea.addEventListener('input', updateCounter);
-        updateCounter();
-
-        // Speed slider interaction
-        const speedSlider = document.getElementById('speed');
-        const speedValue = document.getElementById('speed-value');
-        
-        if (speedSlider && speedValue) {
-            speedSlider.addEventListener('input', function() {
-                speedValue.textContent = this.value + 'x';
+            voiceButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    voiceButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    const voice = this.dataset.voice;
+                    if (voice === 'random') {
+                        // Select random voice
+                        const voices = /*[[${voices}]]*/ [];
+                        const randomVoice = voices[Math.floor(Math.random() * voices.length)];
+                        selectedVoice = randomVoice;
+                        voiceDisplay.textContent = `Voice: ${randomVoice.charAt(0).toUpperCase() + randomVoice.slice(1)} (Random)`;
+                    } else {
+                        selectedVoice = voice;
+                        voiceDisplay.textContent = `Voice: ${voice.charAt(0).toUpperCase() + voice.slice(1)}`;
+                    }
+                    
+                    document.getElementById('selectedVoice').value = selectedVoice;
+                });
             });
         }
 
-        // Audio player enhancements
+        // Vibe selection functionality
+        function initializeVibeButtons() {
+            updateVibeButtons();
+            
+            document.querySelector('.shuffle-vibes').addEventListener('click', function() {
+                shuffleVibes();
+            });
+            
+            document.getElementById('useVibeScriptBtn').addEventListener('click', function() {
+                if (selectedVibe && selectedVibe.script) {
+                    document.getElementById('text').value = selectedVibe.script;
+                    updateCounter();
+                }
+            });
+        }
+
+        function updateVibeButtons() {
+            const vibeGrid = document.querySelector('.vibe-grid');
+            const vibes = /*[[${vibes}]]*/ [];
+            
+            vibeGrid.innerHTML = '';
+            vibes.forEach(vibe => {
+                const button = document.createElement('div');
+                button.className = 'vibe-button';
+                button.dataset.vibe = vibe.name;
+                button.innerHTML = `<span>${vibe.name}</span>`;
+                
+                button.addEventListener('click', function() {
+                    selectVibe(vibe);
+                });
+                
+                vibeGrid.appendChild(button);
+            });
+        }
+
+        function selectVibe(vibe) {
+            // Remove active class from all vibe buttons
+            document.querySelectorAll('.vibe-button').forEach(btn => btn.classList.remove('active'));
+            
+            // Add active class to selected button
+            event.target.closest('.vibe-button').classList.add('active');
+            
+            selectedVibe = vibe;
+            
+            // Update description and script
+            document.getElementById('vibeDescription').innerHTML = vibe.description.replace(/\\n/g, '<br>');
+            document.getElementById('vibeScript').textContent = vibe.script;
+            document.getElementById('selectedStyle').value = vibe.description;
+        }
+
+        function shuffleVibes() {
+            fetch('/api/vibes?count=6')
+                .then(response => response.json())
+                .then(vibes => {
+                    const vibeGrid = document.querySelector('.vibe-grid');
+                    vibeGrid.innerHTML = '';
+                    
+                    vibes.forEach(vibe => {
+                        const button = document.createElement('div');
+                        button.className = 'vibe-button';
+                        button.dataset.vibe = vibe.name;
+                        button.innerHTML = `<span>${vibe.name}</span>`;
+                        
+                        button.addEventListener('click', function() {
+                            selectVibe(vibe);
+                        });
+                        
+                        vibeGrid.appendChild(button);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error shuffling vibes:', error);
+                });
+        }
+
+        // Form handling
+        function initializeForm() {
+            document.getElementById('ttsForm').addEventListener('submit', function(e) {
+                if (!selectedVoice) {
+                    e.preventDefault();
+                    alert('Please select a voice first!');
+                    return;
+                }
+                
+                document.getElementById('loading').style.display = 'flex';
+            });
+        }
+
+        // Character counter
+        function setupCharacterCounter() {
+            const textarea = document.getElementById('text');
+            const counter = document.querySelector('.char-counter');
+            
+            function updateCounter() {
+                const current = textarea.value.length;
+                const max = 4000;
+                counter.textContent = `${current}/${max} characters`;
+                
+                if (current > max * 0.9) {
+                    counter.style.color = '#e74c3c';
+                } else {
+                    counter.style.color = '#666';
+                }
+            }
+            
+            textarea.addEventListener('input', updateCounter);
+            updateCounter();
+            
+            // Make updateCounter available globally
+            window.updateCounter = updateCounter;
+        }
+
+        // Audio player enhancements (keeping existing functionality)
         const audioElement = document.querySelector('audio');
         if (audioElement) {
-            // Force reload and play audio when page loads
             audioElement.addEventListener('loadstart', function() {
                 console.log('Audio loading started');
             });
             
             audioElement.addEventListener('canplay', function() {
                 console.log('Audio can start playing');
-                // Ensure audio plays when it's ready
                 audioElement.play().catch(function(error) {
                     console.log('Auto-play was prevented:', error);
-                    // Show a message to user if autoplay is blocked
                     const audioSection = document.querySelector('.audio-section');
                     if (audioSection) {
                         const notice = document.createElement('div');
@@ -187,15 +318,8 @@
                 alert('Error loading audio. Please try generating again.');
             });
             
-            // Add a replay button functionality
-            audioElement.addEventListener('ended', function() {
-                console.log('Audio playback ended');
-            });
-            
-            // Ensure the audio loads fresh each time and attempt to play
             audioElement.load();
             
-            // Try to play immediately (works if user has interacted with page)
             setTimeout(function() {
                 audioElement.play().catch(function(error) {
                     console.log('Immediate auto-play was prevented:', error);

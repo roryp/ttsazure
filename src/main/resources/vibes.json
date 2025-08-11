@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Excited",
+    "description": "Voice Affect: Excited, energetic, vibrant; embody enthusiasm and high energy.\n\nTone: Upbeat, animated, spirited; convey genuine excitement and positivity.\n\nPacing: Slightly faster than normal, with dynamic rhythm and emphasis.\n\nEmotion: Joyful and enthusiastic; express genuine excitement and engagement.",
+    "script": "Welcome to our amazing new product launch! This is absolutely incredible and I can't wait to share all the fantastic features we've built just for you!"
+  },
+  {
+    "name": "Calm",
+    "description": "Voice Affect: Soft, gentle, soothing; embody tranquility and peace.\n\nTone: Calm, reassuring, peaceful; convey warmth and serenity.\n\nPacing: Slow, deliberate, and unhurried; use gentle pauses for relaxation.\n\nEmotion: Deeply soothing and comforting; express genuine kindness and care.",
+    "script": "Take a deep breath and let yourself relax. Everything is going to be just fine. Find your peaceful center and let the stress of the day simply melt away."
+  },
+  {
+    "name": "Professional",
+    "description": "Voice Affect: Polished, authoritative, confident; embody professionalism and competence.\n\nTone: Clear, articulate, respectful; convey expertise and reliability.\n\nPacing: Measured and precise, with clear enunciation and appropriate pauses.\n\nEmotion: Confident and trustworthy; express professionalism and competence.",
+    "script": "Thank you for joining today's quarterly business review. We'll be covering our key performance indicators, strategic initiatives, and upcoming market opportunities."
+  },
+  {
+    "name": "Friendly",
+    "description": "Voice Affect: Warm, approachable, genuine; embody friendliness and openness.\n\nTone: Cordial, inviting, pleasant; convey genuine care and interest.\n\nPacing: Natural and comfortable, with warm inflection and welcoming rhythm.\n\nEmotion: Genuinely friendly and caring; express warmth and authentic connection.",
+    "script": "Hey there! It's so wonderful to see you today. I hope you're having a fantastic day and I'm excited to help you with whatever you need!"
+  },
+  {
+    "name": "Mysterious",
+    "description": "Voice Affect: Enigmatic, intriguing, subtle; embody mystery and intrigue.\n\nTone: Hushed, conspiratorial, captivating; convey secrets and hidden knowledge.\n\nPacing: Deliberate and measured, with strategic pauses to build suspense.\n\nEmotion: Intriguing and enigmatic; express mystery and hidden depths.",
+    "script": "There are secrets hidden in the shadows... ancient knowledge that few have discovered. Are you ready to uncover the truth that lies beneath?"
+  },
+  {
+    "name": "Dramatic",
+    "description": "Voice Affect: Bold, expressive, commanding; embody theatrical presence and drama.\n\nTone: Powerful, emphatic, captivating; convey importance and gravitas.\n\nPacing: Varied for dramatic effect, with strategic pauses and emphasis.\n\nEmotion: Passionate and compelling; express intensity and dramatic flair.",
+    "script": "This moment... this single decision... will change everything! The fate of our world hangs in the balance, and only you can make the choice that matters!"
+  },
+  {
+    "name": "Playful",
+    "description": "Voice Affect: Light, bouncy, animated; embody playfulness and fun.\n\nTone: Playful, mischievous, entertaining; convey humor and lightheartedness.\n\nPacing: Varied and dynamic, with playful rhythm and animated delivery.\n\nEmotion: Fun-loving and spirited; express playfulness and joy.",
+    "script": "Hey, want to hear something really silly? Why don't scientists trust atoms? Because they make up everything! Get it? Make up? Oh, that's just too funny!"
+  },
+  {
+    "name": "Whisper",
+    "description": "Voice Affect: Extremely soft, intimate, hushed; embody secrecy and closeness.\n\nTone: Gentle, conspiratorial, intimate; convey privacy and confidentiality.\n\nPacing: Slower and more deliberate, with careful articulation despite low volume.\n\nEmotion: Intimate and personal; express closeness and confidential sharing.",
+    "script": "Come closer... I have something very important to tell you... something that must remain just between us... can you keep a secret?"
+  },
+  {
+    "name": "Angry",
+    "description": "Voice Affect: Intense, forceful, sharp; embody controlled anger and frustration.\n\nTone: Firm, direct, assertive; convey strong emotion while remaining articulate.\n\nPacing: Varied, with emphasis on key words and controlled intensity.\n\nEmotion: Frustrated but controlled; express anger while maintaining clarity.",
+    "script": "I am absolutely fed up with this situation! This is completely unacceptable and something needs to change right now!"
+  },
+  {
+    "name": "Sad",
+    "description": "Voice Affect: Subdued, reflective, gentle; embody melancholy and introspection.\n\nTone: Soft, contemplative, slightly somber; convey empathy and understanding.\n\nPacing: Slower than normal, with thoughtful pauses and gentle delivery.\n\nEmotion: Compassionate and understanding; express gentle sadness and empathy.",
+    "script": "Sometimes life brings us moments of deep sadness... times when we must pause and reflect on what truly matters in our hearts."
+  },
+  {
+    "name": "Cheerful",
+    "description": "Voice Affect: Bright, uplifting, positive; embody joy and happiness.\n\nTone: Cheerful, optimistic, radiant; convey genuine happiness and positivity.\n\nPacing: Lively and buoyant, with upbeat rhythm and joyful inflection.\n\nEmotion: Genuinely happy and uplifting; express joy and positive energy.",
+    "script": "What a beautiful, wonderful day this is! Everything feels bright and full of possibilities. I just love how amazing life can be!"
+  },
+  {
+    "name": "Sarcastic",
+    "description": "Voice Affect: Dry, pointed, subtly mocking; embody sarcasm and irony.\n\nTone: Sardonic, witty, slightly condescending; convey clever mockery.\n\nPacing: Normal with strategic emphasis on ironic points and subtle pauses.\n\nEmotion: Cleverly sarcastic; express wit and subtle mockery.",
+    "script": "Oh wow, what a brilliant idea that was! I'm sure absolutely nothing could possibly go wrong with that plan. Simply genius!"
+  }
+]
