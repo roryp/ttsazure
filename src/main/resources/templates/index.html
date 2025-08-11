@@ -81,11 +81,11 @@
                 </div>
             </section>
 
-            <section th:if="${audioInline}" class="audio-section">
+            <section th:if="${audioId}" class="audio-section">
                 <h2>Generated Audio</h2>
                 <div class="audio-player">
-                    <audio controls th:attr="autoplay=${autoplay}">
-                        <source th:src="'data:audio/mpeg;base64,' + ${audioInline}" type="audio/mpeg">
+                    <audio controls th:attr="autoplay=${autoplay}" preload="none">
+                        <source th:src="@{'/audio/' + ${audioId}}" type="audio/mpeg">
                         Your browser does not support the audio element.
                     </audio>
                 </div>
@@ -129,6 +129,32 @@
         
         textarea.addEventListener('input', updateCounter);
         updateCounter();
+
+        // Audio player enhancements
+        const audioElement = document.querySelector('audio');
+        if (audioElement) {
+            // Force reload audio source each time
+            audioElement.addEventListener('loadstart', function() {
+                console.log('Audio loading started');
+            });
+            
+            audioElement.addEventListener('canplay', function() {
+                console.log('Audio can start playing');
+            });
+            
+            audioElement.addEventListener('error', function(e) {
+                console.error('Audio error:', e);
+                alert('Error loading audio. Please try generating again.');
+            });
+            
+            // Add a replay button functionality
+            audioElement.addEventListener('ended', function() {
+                console.log('Audio playback ended');
+            });
+            
+            // Ensure the audio loads fresh each time
+            audioElement.load();
+        }
 
         // Auto-hide alerts after 5 seconds
         document.querySelectorAll('.alert').forEach(alert => {

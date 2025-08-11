@@ -9,7 +9,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Base64;
 import java.util.List;
 
 @Controller
@@ -69,9 +68,8 @@ public class TtsController {
             // Generate speech
             byte[] audioData = openAIService.generateSpeech(text, voice, style);
             
-            // Store audio and create inline data
+            // Store audio
             String audioId = audioStore.store(audioData);
-            String audioInline = Base64.getEncoder().encodeToString(audioData);
 
             // Add attributes to model
             model.addAttribute("voices", AVAILABLE_VOICES);
@@ -79,7 +77,6 @@ public class TtsController {
             model.addAttribute("lastVoice", voice);
             model.addAttribute("lastStyle", style);
             model.addAttribute("autoplay", autoplay);
-            model.addAttribute("audioInline", audioInline);
             model.addAttribute("audioId", audioId);
             model.addAttribute("audioSize", formatFileSize(audioData.length));
             model.addAttribute("success", "Voice generated successfully!");
@@ -115,8 +112,17 @@ public class TtsController {
         headers.setContentType(MediaType.valueOf("audio/mpeg"));
         headers.setContentLength(audioData.length);
         
+        // Add streaming headers to prevent caching and enable proper audio streaming
+        headers.set("Accept-Ranges", "bytes");
+        headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+        headers.set("Pragma", "no-cache");
+        headers.set("Expires", "0");
+        headers.set("Access-Control-Allow-Origin", "*");
+        
         if (download) {
             headers.setContentDispositionFormData("attachment", "audio_" + id + ".mp3");
+        } else {
+            headers.set("Content-Disposition", "inline");
         }
 
         logger.info("Serving audio: id={}, size={} bytes, download={}", id, audioData.length, download);

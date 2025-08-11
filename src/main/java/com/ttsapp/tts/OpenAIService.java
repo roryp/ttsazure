@@ -1,9 +1,5 @@
 package com.ttsapp.tts;
 
-import com.azure.core.credential.AccessToken;
-import com.azure.core.credential.TokenRequestContext;
-import com.azure.identity.DefaultAzureCredential;
-import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,24 +18,24 @@ import java.util.Map;
 public class OpenAIService {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenAIService.class);
-    private static final String COGNITIVE_SERVICES_SCOPE = "https://cognitiveservices.azure.com/.default";
     private static final String API_VERSION = "2025-03-01-preview";
 
     private final String endpoint;
     private final String deployment;
     private final String model;
-    private final DefaultAzureCredential credential;
+    private final String apiKey;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
     public OpenAIService(
             @Value("${azure.openai.endpoint}") String endpoint,
             @Value("${azure.openai.deployment}") String deployment,
-            @Value("${azure.openai.model}") String model) {
+            @Value("${azure.openai.model}") String model,
+            @Value("${azure.openai.api-key}") String apiKey) {
         this.endpoint = endpoint;
         this.deployment = deployment;
         this.model = model;
-        this.credential = new DefaultAzureCredentialBuilder().build();
+        this.apiKey = apiKey;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
@@ -52,15 +48,6 @@ public class OpenAIService {
     public byte[] generateSpeech(String text, String voice, String style) throws IOException, InterruptedException {
         logger.info("Generating speech for text length: {}, voice: {}, style: {}", 
                    text.length(), voice, style);
-
-        // Get access token
-        TokenRequestContext tokenRequestContext = new TokenRequestContext()
-                .addScopes(COGNITIVE_SERVICES_SCOPE);
-        AccessToken token = credential.getToken(tokenRequestContext).block();
-
-        if (token == null) {
-            throw new RuntimeException("Failed to obtain access token");
-        }
 
         // Prepare request body
         String input = style != null && !style.trim().isEmpty() 
@@ -82,7 +69,7 @@ public class OpenAIService {
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .header("Authorization", "Bearer " + token.getToken())
+                .header("api-key", apiKey)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
                 .timeout(Duration.ofMinutes(2))

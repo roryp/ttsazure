@@ -36,6 +36,96 @@ A Spring Boot web application that uses Azure OpenAI's TTS (Text-to-Speech) serv
 - [Docker](https://www.docker.com/get-started) (for local builds)
 - Azure subscription with access to Azure OpenAI
 
+## Configuration
+
+The application uses environment variables for configuration. You can set these in multiple ways:
+
+### Environment Variables
+
+| Variable | Description | Default Value |
+|----------|-------------|---------------|
+| `SERVER_PORT` | Application server port | `8080` |
+| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI service endpoint | Required |
+| `AZURE_OPENAI_DEPLOYMENT` | TTS model deployment name | `gpt-4o-mini-tts` |
+| `AZURE_OPENAI_MODEL` | TTS model name | `gpt-4o-mini-tts` |
+| `AZURE_OPENAI_API_KEY` | Azure OpenAI API key | Required |
+| `LOG_LEVEL` | Application log level | `INFO` |
+| `WEB_LOG_LEVEL` | Web framework log level | `INFO` |
+
+### Local Development Setup
+
+1. **Copy the example environment file**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Update `.env` with your Azure OpenAI credentials**
+   ```bash
+   # Edit .env file
+   AZURE_OPENAI_ENDPOINT=https://your-resource-name.cognitiveservices.azure.com
+   AZURE_OPENAI_API_KEY=your-api-key-here
+   ```
+
+3. **Run locally using the convenience scripts**
+   ```bash
+   # On Linux/macOS
+   ./run-local.sh
+   
+   # On Windows
+   run-local.bat
+   ```
+
+   Or manually load environment variables:
+   ```bash
+   # Load environment variables (Linux/macOS)
+   export $(cat .env | grep -v '^#' | xargs)
+   mvn spring-boot:run
+   
+   # Windows PowerShell
+   Get-Content .env | ForEach-Object { if($_ -match '^([^#].*)=(.*)$') { [Environment]::SetEnvironmentVariable($matches[1], $matches[2]) } }
+   mvn spring-boot:run
+   ```
+
+## Docker Deployment
+
+### Quick Docker Run
+
+1. **Build and run with Docker**
+   ```bash
+   # Build the image
+   docker build -t tts-azure-app .
+   
+   # Run with environment file
+   docker run --env-file .env -p 8080:8080 --name tts-app tts-azure-app
+   ```
+
+2. **Using Docker Compose**
+   ```bash
+   # Start the application
+   docker-compose up -d
+   
+   # View logs
+   docker-compose logs -f
+   
+   # Stop the application
+   docker-compose down
+   ```
+
+3. **Using Management Scripts**
+   ```bash
+   # Linux/macOS
+   ./docker-manage.sh build   # Build image
+   ./docker-manage.sh run     # Start container
+   ./docker-manage.sh logs    # View logs
+   ./docker-manage.sh stop    # Stop container
+   
+   # Windows
+   docker-manage.bat build    # Build image
+   docker-manage.bat run      # Start container
+   docker-manage.bat logs     # View logs
+   docker-manage.bat stop     # Stop container
+   ```
+
 ## Quick Start
 
 ### First-time Setup
