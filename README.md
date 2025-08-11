@@ -1,376 +1,270 @@
-# Azure OpenAI Text-to-Speech Application
+# 🎵 Azure OpenAI TTS Audio Soundboard
 
-A Spring Boot web application that uses Azure OpenAI's TTS (Text-to-Speech) service to convert text into natural-sounding speech. The application runs on Azure Container Apps and uses Managed Identity for secure authentication.
+A modern, interactive text-to-speech application built with Spring Boot and Azure OpenAI's GPT-4o Mini TTS model. Transform any text into natural-sounding speech with multiple voice options and customizable styles.
 
-## Features
+![Azure OpenAI TTS](https://img.shields.io/badge/Azure%20OpenAI-TTS-blue)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.4-green)
+![Java](https://img.shields.io/badge/Java-21-orange)
+![License](https://img.shields.io/badge/License-MIT-blue)
 
-- **Six Voice Options**: Alloy, Echo, Fable, Onyx, Nova, Shimmer
-- **Voice Styling**: Add emotion or style to your generated speech
-- **Real-time Audio**: Inline audio player with autoplay option
-- **Download Support**: Download generated audio as MP3 files
-- **Responsive UI**: Modern, accessible web interface using Thymeleaf
-- **Azure Container Apps**: Scalable containerized deployment
-- **Managed Identity**: Secure authentication without API keys
-- **Auto-expiring Cache**: 10-minute TTL for generated audio files
+## ✨ Features
 
-## Architecture
+### 🎤 **Voice Selection**
+- **11 Premium Voices**: Alloy, Ash, Ballad, Coral, Echo, Fable, Nova, Onyx, Sage, Shimmer, Verse
+- **Interactive Voice Buttons** with visual feedback and hover effects
+- **Random Voice Selection** for variety and experimentation
+- **Modern Grid Layout** that adapts to all screen sizes
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Web Browser    │───▶│ Container Apps  │───▶│ Azure OpenAI    │
-│                 │    │  (Spring Boot)  │    │   (TTS Model)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                                ▼
-                       ┌─────────────────┐
-                       │ Container       │
-                       │ Registry (ACR)  │
-                       └─────────────────┘
-```
+### 🎭 **Advanced Vibe System**
+- **12 Predefined Vibes** with detailed voice instructions:
+  - **Excited** - High energy and enthusiastic delivery
+  - **Calm** - Peaceful and soothing tone
+  - **Professional** - Clear, authoritative business communication
+  - **Friendly** - Warm and approachable conversation
+  - **Mysterious** - Enigmatic and intriguing atmosphere
+  - **Dramatic** - Theatrical and compelling presentation
+  - **Playful** - Light-hearted and fun delivery
+  - **Whisper** - Intimate and hushed communication
+  - **Angry** - Controlled intensity and frustration
+  - **Sad** - Gentle melancholy and empathy
+  - **Cheerful** - Bright and joyful expression
+  - **Sarcastic** - Witty and ironic delivery
 
-## Prerequisites
+- **Sample Scripts** for each vibe to get started quickly
+- **Shuffle Vibes** functionality to discover new combinations
+- **Dynamic Vibe Loading** with interactive selection
 
-- [Azure Developer CLI (azd)](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd)
-- [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
-- [Java 21](https://adoptium.net/)
-- [Docker](https://www.docker.com/get-started) (for local builds)
-- Azure subscription with access to Azure OpenAI
+### 🎚️ **Audio Controls**
+- **Multiple Audio Formats**: MP3 (recommended), WAV (high quality), Opus (compact)
+- **Auto-play Support** with fallback for browser restrictions
+- **Download Options** for generated audio files
+- **Real-time Audio Streaming** with instant playback
 
-## Configuration
+### 💻 **User Interface**
+- **Modern Soundboard Design** inspired by professional audio tools
+- **Responsive Layout** that works on desktop, tablet, and mobile
+- **Interactive Elements** with smooth animations and transitions
+- **Visual Feedback** for all user actions and selections
+- **Character Counter** with smart validation (up to 4,000 characters)
 
-The application uses environment variables for configuration. You can set these in multiple ways:
+## 🚀 Quick Start
 
-### Environment Variables
+### Prerequisites
+- Java 21 or higher
+- Maven 3.6+
+- Azure OpenAI account with TTS deployment
 
-| Variable | Description | Default Value |
-|----------|-------------|---------------|
-| `SERVER_PORT` | Application server port | `8080` |
-| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI service endpoint | Required |
-| `AZURE_OPENAI_DEPLOYMENT` | TTS model deployment name | `gpt-4o-mini-tts` |
-| `AZURE_OPENAI_MODEL` | TTS model name | `gpt-4o-mini-tts` |
-| `AZURE_OPENAI_API_KEY` | Azure OpenAI API key | Required |
-| `LOG_LEVEL` | Application log level | `INFO` |
-| `WEB_LOG_LEVEL` | Web framework log level | `INFO` |
-
-### Local Development Setup
-
-1. **Copy the example environment file**
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Update `.env` with your Azure OpenAI credentials**
-   ```bash
-   # Edit .env file
-   AZURE_OPENAI_ENDPOINT=https://your-resource-name.cognitiveservices.azure.com
-   AZURE_OPENAI_API_KEY=your-api-key-here
-   ```
-
-3. **Run locally using the convenience scripts**
-   ```bash
-   # On Linux/macOS
-   ./run-local.sh
-   
-   # On Windows
-   run-local.bat
-   ```
-
-   Or manually load environment variables:
-   ```bash
-   # Load environment variables (Linux/macOS)
-   export $(cat .env | grep -v '^#' | xargs)
-   mvn spring-boot:run
-   
-   # Windows PowerShell
-   Get-Content .env | ForEach-Object { if($_ -match '^([^#].*)=(.*)$') { [Environment]::SetEnvironmentVariable($matches[1], $matches[2]) } }
-   mvn spring-boot:run
-   ```
-
-## Docker Deployment
-
-### Quick Docker Run
-
-1. **Build and run with Docker**
-   ```bash
-   # Build the image
-   docker build -t tts-azure-app .
-   
-   # Run with environment file
-   docker run --env-file .env -p 8080:8080 --name tts-app tts-azure-app
-   ```
-
-2. **Using Docker Compose**
-   ```bash
-   # Start the application
-   docker-compose up -d
-   
-   # View logs
-   docker-compose logs -f
-   
-   # Stop the application
-   docker-compose down
-   ```
-
-3. **Using Management Scripts**
-   ```bash
-   # Linux/macOS
-   ./docker-manage.sh build   # Build image
-   ./docker-manage.sh run     # Start container
-   ./docker-manage.sh logs    # View logs
-   ./docker-manage.sh stop    # Stop container
-   
-   # Windows
-   docker-manage.bat build    # Build image
-   docker-manage.bat run      # Start container
-   docker-manage.bat logs     # View logs
-   docker-manage.bat stop     # Stop container
-   ```
-
-## Quick Start
-
-### First-time Setup
-
-1. **Clone and navigate to the repository**
-   ```bash
-   git clone <repository-url>
-   cd tts-ai-app
-   ```
-
-2. **Login to Azure**
-   ```bash
-   azd auth login
-   az login
-   ```
-
-3. **Set your Azure subscription**
-   ```bash
-   az account set -s "<your-subscription-id>"
-   ```
-
-4. **Deploy the application**
-   ```bash
-   azd up
-   ```
-
-   This will:
-   - Create the resource group `tts-ai-app` in `eastus2`
-   - Provision all Azure resources (Container Apps, ACR, OpenAI, etc.)
-   - Build and deploy the application
-   - Configure Managed Identity permissions
-
-5. **Get your application URL**
-   ```bash
-   az containerapp show -n tts-ai-app -g tts-ai-app --query properties.configuration.ingress.fqdn -o tsv
-   ```
-
-### Subsequent Deployments
-
-For code changes, you can deploy just the application:
-
+### 1. Clone the Repository
 ```bash
-azd deploy
+git clone https://github.com/roryp/ttsazure.git
+cd ttsazure
 ```
 
-Or for infrastructure + application changes:
+### 2. Configure Environment Variables
+Update the `.env` file with your Azure OpenAI credentials:
+```env
+AZURE_OPENAI_ENDPOINT=https://your-resource.cognitiveservices.azure.com
+AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini-tts
+AZURE_OPENAI_MODEL=gpt-4o-mini-tts
+AZURE_OPENAI_API_KEY=your-api-key-here
+```
 
+### 3. Run the Application
 ```bash
-azd up
+# Load environment variables and start the application
+source .env
+mvn spring-boot:run
 ```
 
-## Local Development
+### 4. Access the Application
+Open your browser and navigate to:
+```
+http://localhost:8080
+```
 
-### Running Locally
+## 📱 How to Use
 
-1. **Authenticate with Azure**
-   ```bash
-   az login
-   ```
+### Step 1: Select a Voice
+Click on any of the 11 voice buttons to choose your preferred voice. You can also click "Random" to let the system pick one for you.
 
-2. **Set environment variables** (get values from Azure)
-   ```bash
-   export AZURE_OPENAI_ENDPOINT="https://your-openai-resource.openai.azure.com/"
-   export AZURE_OPENAI_DEPLOYMENT="gpt-4o-mini-tts"
-   export AZURE_OPENAI_MODEL="gpt-4o-mini-tts"
-   ```
+### Step 2: Choose a Vibe (Optional)
+Select from 12 predefined vibes to automatically configure the voice style and get sample text. You can:
+- Browse the current selection of vibes
+- Click "🎲 Shuffle Vibes" to see different options
+- View detailed descriptions and sample scripts
+- Click "📝 Use Vibe Script" to populate the text area
 
-3. **Run the application**
-   ```bash
-   cd src
-   mvn spring-boot:run
-   ```
+### Step 3: Enter Your Text
+- Type or paste your text (up to 4,000 characters)
+- Use the provided vibe script or create your own content
+- The character counter helps you stay within limits
 
-4. **Access the application**
-   Open http://localhost:8080 in your browser
+### Step 4: Generate Speech
+- Choose your preferred audio format (MP3, WAV, or Opus)
+- Click "🎵 Generate Voice" to create your audio
+- The audio will automatically play when ready
 
-### Building Docker Image Locally
+### Step 5: Download & Share
+- Use the built-in audio player controls
+- Download the generated audio file
+- Share or use the audio in your projects
 
+## 🔧 API Endpoints
+
+The application provides several REST endpoints for advanced usage:
+
+### Audio Generation
+- `POST /tts` - Generate speech from form data
+- `POST /api/quick-tts` - JSON API for programmatic access
+
+### Audio Retrieval
+- `GET /audio/{id}` - Stream generated audio file
+- `GET /audio/{id}?download=true` - Download audio file
+
+### Vibe Management
+- `GET /api/vibes` - Get random vibes (default: 6)
+- `GET /api/vibes?count=12` - Get specific number of vibes
+- `GET /api/vibe/{name}` - Get specific vibe details
+
+### Health Check
+- `GET /health` - Application health and cache status
+
+## 🏗️ Architecture
+
+### Technology Stack
+- **Backend**: Spring Boot 3.5.4 with Java 21
+- **Frontend**: Thymeleaf templates with modern CSS and JavaScript
+- **AI Service**: Azure OpenAI GPT-4o Mini TTS
+- **Audio Processing**: Java HttpClient with streaming support
+- **Caching**: In-memory audio store with TTL management
+
+### Project Structure
+```
+ttsazure/
+├── src/
+│   ├── main/
+│   │   ├── java/com/ttsapp/tts/
+│   │   │   ├── TtsApplication.java      # Main application
+│   │   │   ├── TtsController.java       # Web controller
+│   │   │   ├── OpenAIService.java       # Azure OpenAI integration
+│   │   │   ├── AudioStore.java          # Audio caching
+│   │   │   └── VibeService.java         # Vibe management
+│   │   └── resources/
+│   │       ├── templates/index.html     # Main UI template
+│   │       ├── static/styles.css        # Modern styling
+│   │       ├── vibes.json              # Vibe configurations
+│   │       └── application.yml         # Spring configuration
+├── .env                                 # Environment variables
+├── pom.xml                             # Maven dependencies
+└── README.md                           # This file
+```
+
+## 🎨 Customization
+
+### Adding New Vibes
+Edit `src/main/resources/vibes.json` to add new voice styles:
+```json
+{
+  "name": "Custom Vibe",
+  "description": "Voice instructions here...",
+  "script": "Sample text for this vibe..."
+}
+```
+
+### Styling Changes
+Modify `src/main/resources/static/styles.css` to customize:
+- Color schemes and themes
+- Button layouts and animations
+- Responsive breakpoints
+- Visual effects and transitions
+
+### Voice Configuration
+Update the voice list in `TtsController.java`:
+```java
+private static final List<String> AVAILABLE_VOICES = List.of(
+    "alloy", "ash", "ballad", "coral", "echo", 
+    "fable", "nova", "onyx", "sage", "shimmer", "verse"
+);
+```
+
+## 🔒 Security
+
+- **Environment Variables**: Sensitive data stored in `.env` (gitignored)
+- **Input Validation**: Text length and format validation
+- **Error Handling**: Graceful error messages without exposing internals
+- **CORS Support**: Configurable for different deployment environments
+
+## 🚀 Deployment
+
+### Local Development
 ```bash
-cd src
-docker build -t tts-ai-app .
-docker run -p 8080:8080 \
-  -e AZURE_OPENAI_ENDPOINT="your-endpoint" \
-  -e AZURE_OPENAI_DEPLOYMENT="gpt-4o-mini-tts" \
-  -e AZURE_OPENAI_MODEL="gpt-4o-mini-tts" \
-  tts-ai-app
+source .env
+mvn spring-boot:run
 ```
 
-## Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI service endpoint | Required |
-| `AZURE_OPENAI_DEPLOYMENT` | Deployment name for TTS model | `gpt-4o-mini-tts` |
-| `AZURE_OPENAI_MODEL` | TTS model name | `gpt-4o-mini-tts` |
-
-### Azure Resources Created
-
-- **Resource Group**: `tts-ai-app` (eastus2)
-- **Container Apps Environment**: Hosts the application
-- **Container App**: `tts-ai-app` - The main application
-- **Container Registry**: Stores Docker images
-- **Azure OpenAI**: Cognitive Services with GPT-4o Mini TTS deployment
-- **Log Analytics**: Application monitoring and logs
-- **Application Insights**: Application performance monitoring
-
-### Managed Identity Permissions
-
-The Container App's system-assigned managed identity has:
-
-- **Cognitive Services User** role on the Azure OpenAI account
-- **AcrPull** role on the Container Registry
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/` | Main TTS form interface |
-| `POST` | `/tts` | Generate speech from text |
-| `GET` | `/audio/{id}` | Stream audio file |
-| `GET` | `/audio/{id}?download=1` | Download audio file |
-| `GET` | `/health` | Health check endpoint |
-
-## GitHub Actions CI/CD
-
-The repository includes automated deployment via GitHub Actions.
-
-### Setup
-
-1. **Create a Service Principal**
-   ```bash
-   az ad sp create-for-rbac --name "tts-ai-app-github" \
-     --role Contributor \
-     --scopes /subscriptions/{subscription-id} \
-     --json-auth
-   ```
-
-2. **Configure GitHub Secrets**
-   - `AZURE_CLIENT_ID`: Service principal client ID
-   - `AZURE_TENANT_ID`: Azure tenant ID
-   - `AZURE_SUBSCRIPTION_ID`: Azure subscription ID
-
-3. **Configure GitHub Variables**
-   - `AZURE_ENV_NAME`: Environment name (e.g., `tts-ai-app`)
-   - `AZURE_LOCATION`: Azure region (e.g., `eastus2`)
-
-### Federated Credentials (Recommended)
-
-For enhanced security, set up federated credentials:
-
+### Production Build
 ```bash
-az ad app federated-credential create \
-  --id {app-id} \
-  --parameters '{
-    "name": "tts-ai-app-github-main",
-    "issuer": "https://token.actions.githubusercontent.com",
-    "subject": "repo:{org}/{repo}:ref:refs/heads/main",
-    "audiences": ["api://AzureADTokenExchange"]
-  }'
+mvn clean package
+java -jar target/tts-0.0.1-SNAPSHOT.jar
 ```
 
-## Troubleshooting
+### Docker Deployment
+```bash
+docker build -t tts-app .
+docker run -p 8080:8080 --env-file .env tts-app
+```
+
+### Azure Container Apps
+Use the provided Bicep templates in the `infra/` directory for Azure deployment.
+
+## 📊 Monitoring
+
+### Health Checks
+- Application health: `GET /health`
+- Cache statistics included in health endpoint
+- Spring Boot Actuator endpoints available
+
+### Logging
+- Structured logging with configurable levels
+- Request/response tracking
+- Audio generation metrics
+- Error tracking and reporting
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes and test thoroughly
+4. Commit with clear messages: `git commit -m "Add feature description"`
+5. Push to your fork: `git push origin feature-name`
+6. Create a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
 
 ### Common Issues
 
-1. **403 Forbidden errors**
-   - Wait 5-10 minutes for role assignment propagation
-   - Verify Managed Identity has correct permissions
-   - Check Azure OpenAI resource is accessible
-
-2. **Container app won't start**
-   - Check application logs: `az containerapp logs show -n tts-ai-app -g tts-ai-app`
-   - Verify environment variables are set correctly
-   - Ensure container image was built successfully
-
-3. **Audio generation fails**
-   - Verify Azure OpenAI deployment is active
-   - Check input text length (max 1000 characters)
-   - Ensure selected voice is valid
-
-### Useful Commands
-
+**Environment Variables Not Found**
 ```bash
-# View application logs
-az containerapp logs show -n tts-ai-app -g tts-ai-app --follow
-
-# Check container app status
-az containerapp show -n tts-ai-app -g tts-ai-app
-
-# View OpenAI deployments
-az cognitiveservices account deployment list \
-  --name {openai-account-name} \
-  --resource-group tts-ai-app
-
-# Check managed identity
-az containerapp identity show -n tts-ai-app -g tts-ai-app
-
-# Force new deployment
-azd deploy --force
-
-# Clean up resources
-azd down --force --purge
+# Make sure to source the .env file
+source .env
+mvn spring-boot:run
 ```
 
-## Development with GitHub Codespaces
+**Audio Not Playing**
+- Check browser autoplay settings
+- Ensure audio format is supported
+- Verify Azure OpenAI API credentials
 
-This repository is Codespaces-ready:
+**Build Failures**
+- Ensure Java 21+ is installed
+- Verify Maven dependencies are resolved
+- Check internet connectivity for Azure services
 
-1. Click "Code" → "Create codespace on main"
-2. Wait for environment setup
-3. Run `azd auth login` and follow setup instructions
-4. Deploy with `azd up`
-
-## Security Features
-
-- **No API Keys**: Uses Managed Identity for all Azure service authentication
-- **Secure Storage**: Audio files expire automatically after 10 minutes
-- **Input Validation**: Text length limits and voice validation
-- **Container Security**: Non-root user execution in Docker container
-- **Network Security**: HTTPS-only ingress with Azure Container Apps
-
-## Performance & Monitoring
-
-- **Auto-scaling**: Container Apps scales based on demand
-- **Health Checks**: Built-in health monitoring
-- **Application Insights**: Performance and usage analytics
-- **Log Analytics**: Centralized logging and monitoring
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## Support
-
-For issues and questions:
-- Check the [troubleshooting section](#troubleshooting)
-- Review Azure Container Apps documentation
-- Check Azure OpenAI service status
+### Getting Help
+- Open an issue on GitHub for bugs
+- Check existing issues for solutions
+- Review Azure OpenAI documentation for API limits
