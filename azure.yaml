@@ -5,7 +5,7 @@ metadata:
   template: tts-ai-app@0.0.1-beta
 services:
   web:
-    project: ./src
+    project: .
     language: java
     host: containerapp
     docker:
@@ -15,5 +15,5 @@ infra:
   provider: bicep
   path: infra
   parameters:
-    location: eastus2
+    location: eastus
     resourceGroupName: tts-ai-app

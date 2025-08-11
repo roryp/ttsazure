@@ -8,10 +8,10 @@ param deployments array = [
     model: {
       format: 'OpenAI'
       name: 'gpt-4o-mini-tts'
-      version: '001'
+      version: '2025-03-20'
     }
     sku: {
-      name: 'Standard'
+      name: 'GlobalStandard'
       capacity: 1
     }
   }
