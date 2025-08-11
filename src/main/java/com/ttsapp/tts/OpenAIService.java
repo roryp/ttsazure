@@ -23,7 +23,7 @@ public class OpenAIService {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenAIService.class);
     private static final String COGNITIVE_SERVICES_SCOPE = "https://cognitiveservices.azure.com/.default";
-    private static final String API_VERSION = "2025-04-01-preview";
+    private static final String API_VERSION = "2025-03-01-preview";
 
     private final String endpoint;
     private final String deployment;
