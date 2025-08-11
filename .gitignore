@@ -80,3 +80,4 @@ Thumbs.db
 
 # Docker
 .dockerignore
+.azure
