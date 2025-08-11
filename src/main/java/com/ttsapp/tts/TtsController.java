@@ -39,11 +39,12 @@ public class TtsController {
             @RequestParam String text,
             @RequestParam(required = false) String style,
             @RequestParam String voice,
-            @RequestParam(required = false, defaultValue = "false") boolean autoplay,
+            @RequestParam(required = false, defaultValue = "1.0") double speed,
+            @RequestParam(required = false, defaultValue = "mp3") String format,
             Model model) {
         
-        logger.info("TTS request: voice={}, style={}, autoplay={}, text_length={}", 
-                   voice, style, autoplay, text.length());
+        logger.info("TTS request: voice={}, style={}, speed={}, format={}, text_length={}", 
+                   voice, style, speed, format, text.length());
 
         try {
             // Validate input
@@ -65,8 +66,22 @@ public class TtsController {
                 model.addAttribute("warning", "Text was truncated to 1000 characters");
             }
 
+            // Validate speed parameter
+            if (speed < 0.25 || speed > 4.0) {
+                model.addAttribute("error", "Speed must be between 0.25 and 4.0");
+                model.addAttribute("voices", AVAILABLE_VOICES);
+                return "index";
+            }
+
+            // Validate format parameter
+            if (!format.equals("mp3") && !format.equals("wav") && !format.equals("opus")) {
+                model.addAttribute("error", "Invalid audio format. Supported: mp3, wav, opus");
+                model.addAttribute("voices", AVAILABLE_VOICES);
+                return "index";
+            }
+
             // Generate speech
-            byte[] audioData = openAIService.generateSpeech(text, voice, style);
+            byte[] audioData = openAIService.generateSpeech(text, voice, style, speed, format);
             
             // Store audio
             String audioId = audioStore.store(audioData);
@@ -76,7 +91,8 @@ public class TtsController {
             model.addAttribute("lastText", text);
             model.addAttribute("lastVoice", voice);
             model.addAttribute("lastStyle", style);
-            model.addAttribute("autoplay", autoplay);
+            model.addAttribute("lastSpeed", speed);
+            model.addAttribute("lastFormat", format);
             model.addAttribute("audioId", audioId);
             model.addAttribute("audioSize", formatFileSize(audioData.length));
             model.addAttribute("success", "Voice generated successfully!");
@@ -90,6 +106,8 @@ public class TtsController {
             model.addAttribute("lastText", text);
             model.addAttribute("lastVoice", voice);
             model.addAttribute("lastStyle", style);
+            model.addAttribute("lastSpeed", speed);
+            model.addAttribute("lastFormat", format);
         }
 
         return "index";
@@ -98,9 +116,10 @@ public class TtsController {
     @GetMapping("/audio/{id}")
     public ResponseEntity<byte[]> streamAudio(
             @PathVariable String id,
-            @RequestParam(required = false, defaultValue = "false") boolean download) {
+            @RequestParam(required = false, defaultValue = "false") boolean download,
+            @RequestParam(required = false, defaultValue = "mp3") String format) {
         
-        logger.info("Audio request: id={}, download={}", id, download);
+        logger.info("Audio request: id={}, download={}, format={}", id, download, format);
 
         byte[] audioData = audioStore.retrieve(id);
         if (audioData == null) {
@@ -109,7 +128,14 @@ public class TtsController {
         }
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.valueOf("audio/mpeg"));
+        
+        // Set appropriate content type based on format
+        switch (format.toLowerCase()) {
+            case "wav" -> headers.setContentType(MediaType.valueOf("audio/wav"));
+            case "opus" -> headers.setContentType(MediaType.valueOf("audio/opus"));
+            default -> headers.setContentType(MediaType.valueOf("audio/mpeg"));
+        }
+        
         headers.setContentLength(audioData.length);
         
         // Add streaming headers to prevent caching and enable proper audio streaming
@@ -120,12 +146,15 @@ public class TtsController {
         headers.set("Access-Control-Allow-Origin", "*");
         
         if (download) {
-            headers.setContentDispositionFormData("attachment", "audio_" + id + ".mp3");
+            String fileExtension = format.toLowerCase().equals("mp3") ? "mp3" : 
+                                  format.toLowerCase().equals("wav") ? "wav" : 
+                                  format.toLowerCase().equals("opus") ? "opus" : "mp3";
+            headers.setContentDispositionFormData("attachment", "audio_" + id + "." + fileExtension);
         } else {
             headers.set("Content-Disposition", "inline");
         }
 
-        logger.info("Serving audio: id={}, size={} bytes, download={}", id, audioData.length, download);
+        logger.info("Serving audio: id={}, size={} bytes, download={}, format={}", id, audioData.length, download, format);
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(audioData);

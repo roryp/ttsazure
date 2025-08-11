@@ -38,9 +38,31 @@
 
                 <div class="form-group">
                     <label for="style">Voice Style (optional):</label>
-                    <input type="text" id="style" name="style" placeholder="e.g., excited, sad, whispering..." 
+                    <input type="text" id="style" name="style" placeholder="e.g., excited, calm, dramatic, whisper..." 
                            th:value="${lastStyle}">
-                    <small>Add emotion or style to your voice</small>
+                    <small>Choose the emotional tone: excited, calm, sad, angry, whisper, dramatic, friendly, professional, etc.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="speed">Speech Speed:</label>
+                    <input type="range" id="speed" name="speed" min="0.25" max="4.0" step="0.1" 
+                           th:value="${lastSpeed != null ? lastSpeed : 1.0}">
+                    <div class="speed-display">
+                        <span>Slow (0.25x)</span>
+                        <span id="speed-value" th:text="${lastSpeed != null ? lastSpeed + 'x' : '1.0x'}">1.0x</span>
+                        <span>Fast (4.0x)</span>
+                    </div>
+                    <small>Adjust the speaking speed from very slow to very fast</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="format">Audio Format:</label>
+                    <select id="format" name="format">
+                        <option value="mp3" th:selected="${lastFormat == 'mp3' or lastFormat == null}">MP3 (Recommended)</option>
+                        <option value="wav" th:selected="${lastFormat == 'wav'}">WAV (High Quality)</option>
+                        <option value="opus" th:selected="${lastFormat == 'opus'}">Opus (Small Size)</option>
+                    </select>
+                    <small>Choose the audio format - MP3 for compatibility, WAV for quality, Opus for size</small>
                 </div>
 
                 <div class="form-group">
@@ -51,14 +73,6 @@
                                    th:checked="${voice == lastVoice}" required>
                             <label th:for="${voice}" class="voice-label" th:text="${#strings.capitalize(voice)}"></label>
                         </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <div class="checkbox-wrapper">
-                        <input type="checkbox" id="autoplay" name="autoplay" value="true" 
-                               th:checked="${autoplay}">
-                        <label for="autoplay">Auto-play generated audio</label>
                     </div>
                 </div>
 
@@ -78,20 +92,24 @@
                 <div class="text-metadata">
                     <span><strong>Voice:</strong> <span th:text="${#strings.capitalize(lastVoice)}"></span></span>
                     <span th:if="${lastStyle}"><strong>Style:</strong> <span th:text="${lastStyle}"></span></span>
+                    <span th:if="${lastSpeed}"><strong>Speed:</strong> <span th:text="${lastSpeed} + 'x'"></span></span>
+                    <span th:if="${lastFormat}"><strong>Format:</strong> <span th:text="${#strings.toUpperCase(lastFormat)}"></span></span>
                 </div>
             </section>
 
             <section th:if="${audioId}" class="audio-section">
                 <h2>Generated Audio</h2>
                 <div class="audio-player">
-                    <audio controls th:attr="autoplay=${autoplay}" preload="none">
-                        <source th:src="@{'/audio/' + ${audioId}}" type="audio/mpeg">
+                    <audio controls autoplay preload="auto">
+                        <source th:src="@{'/audio/' + ${audioId} + '?format=' + ${lastFormat != null ? lastFormat : 'mp3'}}" 
+                                th:type="${lastFormat == 'wav' ? 'audio/wav' : (lastFormat == 'opus' ? 'audio/opus' : 'audio/mpeg')}">
                         Your browser does not support the audio element.
                     </audio>
                 </div>
                 <div class="audio-actions">
-                    <a th:href="@{'/audio/' + ${audioId} + '?download=true'}" class="btn btn-secondary" download>
-                        📥 Download MP3
+                    <a th:href="@{'/audio/' + ${audioId} + '?download=true&format=' + ${lastFormat != null ? lastFormat : 'mp3'}}" 
+                       class="btn btn-secondary" download>
+                        📥 Download <span th:text="${#strings.toUpperCase(lastFormat != null ? lastFormat : 'mp3')}">MP3</span>
                     </a>
                     <span class="audio-info" th:text="'File size: ' + ${audioSize}"></span>
                 </div>
@@ -130,16 +148,38 @@
         textarea.addEventListener('input', updateCounter);
         updateCounter();
 
+        // Speed slider interaction
+        const speedSlider = document.getElementById('speed');
+        const speedValue = document.getElementById('speed-value');
+        
+        if (speedSlider && speedValue) {
+            speedSlider.addEventListener('input', function() {
+                speedValue.textContent = this.value + 'x';
+            });
+        }
+
         // Audio player enhancements
         const audioElement = document.querySelector('audio');
         if (audioElement) {
-            // Force reload audio source each time
+            // Force reload and play audio when page loads
             audioElement.addEventListener('loadstart', function() {
                 console.log('Audio loading started');
             });
             
             audioElement.addEventListener('canplay', function() {
                 console.log('Audio can start playing');
+                // Ensure audio plays when it's ready
+                audioElement.play().catch(function(error) {
+                    console.log('Auto-play was prevented:', error);
+                    // Show a message to user if autoplay is blocked
+                    const audioSection = document.querySelector('.audio-section');
+                    if (audioSection) {
+                        const notice = document.createElement('div');
+                        notice.className = 'alert alert-warning';
+                        notice.textContent = 'Click the play button to hear your generated audio (autoplay was blocked by browser)';
+                        audioSection.insertBefore(notice, audioSection.firstChild);
+                    }
+                });
             });
             
             audioElement.addEventListener('error', function(e) {
@@ -152,8 +192,15 @@
                 console.log('Audio playback ended');
             });
             
-            // Ensure the audio loads fresh each time
+            // Ensure the audio loads fresh each time and attempt to play
             audioElement.load();
+            
+            // Try to play immediately (works if user has interacted with page)
+            setTimeout(function() {
+                audioElement.play().catch(function(error) {
+                    console.log('Immediate auto-play was prevented:', error);
+                });
+            }, 100);
         }
 
         // Auto-hide alerts after 5 seconds
