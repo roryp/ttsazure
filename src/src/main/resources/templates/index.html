@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure OpenAI Text-to-Speech</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Azure OpenAI Text-to-Speech</h1>
+            <p>Transform your text into natural-sounding speech using Azure OpenAI</p>
+        </header>
+
+        <!-- Status Messages -->
+        <div th:if="${success}" class="alert alert-success" role="alert" aria-live="polite">
+            <span th:text="${success}"></span>
+        </div>
+        
+        <div th:if="${warning}" class="alert alert-warning" role="alert" aria-live="polite">
+            <span th:text="${warning}"></span>
+        </div>
+        
+        <div th:if="${error}" class="alert alert-error" role="alert" aria-live="polite">
+            <span th:text="${error}"></span>
+        </div>
+
+        <!-- TTS Form -->
+        <section class="tts-form">
+            <form method="post" action="/tts">
+                <div class="form-group">
+                    <label for="text">Input Text:</label>
+                    <textarea id="text" name="text" rows="6" placeholder="Enter the text you want to convert to speech..." 
+                              maxlength="1000" required th:text="${lastText}"></textarea>
+                    <small class="char-counter">Maximum 1000 characters</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="style">Voice Style (optional):</label>
+                    <input type="text" id="style" name="style" placeholder="e.g., excited, sad, whispering..." 
+                           th:value="${lastStyle}">
+                    <small>Add emotion or style to your voice</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Choose Voice:</label>
+                    <div class="voice-grid">
+                        <div th:each="voice : ${voices}" class="voice-option">
+                            <input type="radio" th:id="${voice}" name="voice" th:value="${voice}" 
+                                   th:checked="${voice == lastVoice}" required>
+                            <label th:for="${voice}" class="voice-label" th:text="${#strings.capitalize(voice)}"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="autoplay" name="autoplay" value="true" 
+                               th:checked="${autoplay}">
+                        <label for="autoplay">Auto-play generated audio</label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" th:text="${lastText != null} ? 'Regenerate Voice' : 'Generate Voice'">
+                        Generate Voice
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Generated Content -->
+        <div th:if="${lastText}" class="results-section">
+            <section class="text-display">
+                <h2>Your Text</h2>
+                <div class="text-content" th:text="${lastText}"></div>
+                <div class="text-metadata">
+                    <span><strong>Voice:</strong> <span th:text="${#strings.capitalize(lastVoice)}"></span></span>
+                    <span th:if="${lastStyle}"><strong>Style:</strong> <span th:text="${lastStyle}"></span></span>
+                </div>
+            </section>
+
+            <section th:if="${audioInline}" class="audio-section">
+                <h2>Generated Audio</h2>
+                <div class="audio-player">
+                    <audio controls th:attr="autoplay=${autoplay}">
+                        <source th:src="'data:audio/mpeg;base64,' + ${audioInline}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                <div class="audio-actions">
+                    <a th:href="@{'/audio/' + ${audioId} + '?download=true'}" class="btn btn-secondary" download>
+                        📥 Download MP3
+                    </a>
+                    <span class="audio-info" th:text="'File size: ' + ${audioSize}"></span>
+                </div>
+            </section>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loading" class="loading" style="display: none;" aria-live="polite">
+            <div class="spinner"></div>
+            <span>Generating voice...</span>
+        </div>
+    </div>
+
+    <script>
+        // Show loading indicator on form submission
+        document.querySelector('form').addEventListener('submit', function() {
+            document.getElementById('loading').style.display = 'flex';
+        });
+
+        // Character counter
+        const textarea = document.getElementById('text');
+        const counter = document.querySelector('.char-counter');
+        
+        function updateCounter() {
+            const current = textarea.value.length;
+            const max = 1000;
+            counter.textContent = `${current}/${max} characters`;
+            
+            if (current > max * 0.9) {
+                counter.style.color = '#e74c3c';
+            } else {
+                counter.style.color = '#666';
+            }
+        }
+        
+        textarea.addEventListener('input', updateCounter);
+        updateCounter();
+
+        // Auto-hide alerts after 5 seconds
+        document.querySelectorAll('.alert').forEach(alert => {
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300);
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
