@@ -1,0 +1,13 @@
+name: ttsazure
+metadata:
+  template: ttsazure@0.0.1-beta
+services:
+  api:
+    project: .
+    language: java
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: .
+infra:
+  provider: bicep
