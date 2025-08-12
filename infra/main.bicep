@@ -227,6 +227,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               value: openAiModelVersion
             }
             {
+              name: 'AZURE_OPENAI_API_KEY'
+              value: openAiAccount.listKeys().key1
+            }
+            {
               name: 'AZURE_CLIENT_ID'
               value: managedIdentity.properties.clientId
             }
