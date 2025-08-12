@@ -51,10 +51,10 @@ A modern, interactive text-to-speech application built with Spring Boot and Azur
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Java 21 or higher
-- Maven 3.6+
-- Azure OpenAI account with **gpt-4o-mini-tts** model deployment
-- Azure subscription with access to East US 2 or Sweden Central regions
+- [Azure Developer CLI (azd)](https://aka.ms/azd-install)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for containerization)
+- Azure subscription with access to East US or East US 2 regions
+- No need for existing Azure OpenAI resources - azd creates everything!
 
 ### 1. Clone the Repository
 ```bash
@@ -62,30 +62,33 @@ git clone https://github.com/roryp/ttsazure.git
 cd ttsazure
 ```
 
-### 2. Configure Environment Variables
-Update the `.env` file with your Azure OpenAI credentials:
-```env
-AZURE_OPENAI_ENDPOINT=https://your-resource.cognitiveservices.azure.com
-AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini-tts
-AZURE_OPENAI_MODEL=gpt-4o-mini-tts
-AZURE_OPENAI_MODEL_VERSION=2025-03-20
-AZURE_CLIENT_ID=your-managed-identity-client-id
-AZURE_TENANT_ID=your-tenant-id
-```
-
-> **Note**: For Azure Container Apps deployment, the application uses Managed Identity authentication. For local development, you can use API keys.
-
-### 3. Run the Application
+### 2. Deploy to Azure
 ```bash
-# Load environment variables and start the application
-source .env
-mvn spring-boot:run
+# Initialize and deploy everything in one command
+azd up
 ```
 
-### 4. Access the Application
-Open your browser and navigate to:
+That's it! The `azd up` command will:
+- ✅ Create a new Azure OpenAI resource
+- ✅ Deploy the gpt-4o-mini model with TTS support (version 2025-03-20)
+- ✅ Set up Container Registry for your app
+- ✅ Create Container Apps environment
+- ✅ Configure Managed Identity for secure authentication
+- ✅ Build and deploy your application
+- ✅ Provide you with the live application URL
+
+### 3. Access Your Application
+After deployment completes, azd will display your application URL:
 ```
-http://localhost:8080
+Your app is live at: https://your-app-name.azurecontainerapps.io
+```
+
+### 4. Local Development (Optional)
+For local testing with existing Azure resources:
+```bash
+# Install Java 21 and Maven first
+mvn spring-boot:run
+# Access at: http://localhost:8080
 ```
 
 ## 📱 How to Use
@@ -204,38 +207,56 @@ private static final List<String> AVAILABLE_VOICES = List.of(
 
 ## 🚀 Deployment
 
-### Local Development
-```bash
-source .env
-mvn spring-boot:run
-```
-
-### Azure Container Apps (Recommended)
-Use Azure Developer CLI (azd) for seamless cloud deployment:
+### Azure Deployment (Recommended)
+Use Azure Developer CLI for one-command deployment:
 
 ```bash
-# Initialize and deploy
-azd init
+# Deploy everything to Azure
 azd up
 ```
 
-This will:
-- Deploy infrastructure using Bicep templates
-- Create Azure OpenAI resource with gpt-4o-mini-tts model
-- Set up Container Apps environment with proper networking
-- Configure Managed Identity for secure authentication
-- Deploy the application container
+This single command handles:
+- 🏗️ **Infrastructure Creation**: Azure OpenAI, Container Registry, Container Apps
+- 🤖 **AI Model Deployment**: gpt-4o-mini with TTS support (2025-03-20)
+- 🔒 **Security Setup**: Managed Identity, RBAC roles, secure authentication
+- 📦 **Application Build**: Containerizes and deploys your Spring Boot app
+- 🌐 **Network Configuration**: Public endpoints with CORS and health checks
 
-### Manual Production Build
+### Environment Management
 ```bash
-mvn clean package
-java -jar target/tts-0.0.1-SNAPSHOT.jar
+# List environments
+azd env list
+
+# Switch environments
+azd env select <environment-name>
+
+# View environment variables
+azd env get-values
+
+# Clean up resources
+azd down
 ```
 
-### Docker Deployment
+### Local Development
+For development and testing:
 ```bash
-docker build -t tts-app .
-docker run -p 8080:8080 --env-file .env tts-app
+# Ensure Java 21+ is installed
+java --version
+
+# Run locally (connects to Azure resources)
+mvn spring-boot:run
+```
+
+### Production Updates
+```bash
+# Deploy code changes
+azd deploy
+
+# Update infrastructure
+azd provision
+
+# Full redeploy
+azd up
 ```
 
 ## 📊 Monitoring
@@ -268,35 +289,52 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Common Issues
 
-**Environment Variables Not Found**
+**First Time Setup**
 ```bash
-# Make sure to source the .env file
-source .env
-mvn spring-boot:run
+# Install Azure Developer CLI
+# Windows: winget install microsoft.azd
+# macOS: brew install azure-dev
+# Linux: curl -fsSL https://aka.ms/install-azd.sh | bash
+
+# Then deploy
+azd up
 ```
 
-**Audio Not Playing**
-- Check browser autoplay settings
-- Ensure audio format is supported
-- Verify Azure OpenAI API credentials
-- Confirm gpt-4o-mini-tts model is deployed correctly
+**Authentication Issues**
+```bash
+# Login to Azure
+azd auth login
 
-**Build Failures**
-- Ensure Java 21+ is installed
-- Verify Maven dependencies are resolved
-- Check internet connectivity for Azure services
+# Check current subscription
+azd config get defaults.subscription
 
-**Deployment Issues**
-- Ensure you're deploying to East US 2 or Sweden Central (supported regions)
-- Verify Azure subscription has access to OpenAI services
-- Check that Managed Identity has proper role assignments
+# Set specific subscription if needed
+azd config set defaults.subscription <subscription-id>
+```
 
-**Model Not Available**
-- gpt-4o-mini-tts is only available in East US 2 and Sweden Central
-- Ensure your Azure OpenAI resource is in a supported region
-- Verify the model version (2025-03-20) is correctly specified
+**Deployment Failures**
+- Ensure you have Contributor role on the Azure subscription
+- Check that your subscription has Azure OpenAI service enabled
+- Verify you're deploying to East US or East US 2 (supported regions)
+- Use `azd monitor` to check deployment logs
+
+**Model Availability**
+- gpt-4o-mini with TTS is only available in East US and East US 2
+- The infrastructure automatically selects the correct region
+- No manual model deployment needed - azd handles everything
+
+**Resource Cleanup**
+```bash
+# Remove all Azure resources
+azd down --purge
+
+# Keep data but stop services
+azd down
+```
 
 ### Getting Help
 - Open an issue on GitHub for bugs
-- Check existing issues for solutions
+- Check existing issues for solutions  
+- Use `azd monitor` to view application logs
 - Review Azure OpenAI documentation for API limits
+- Check deployment status with `azd env get-values`
