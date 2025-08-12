@@ -1,10 +1,11 @@
 # 🎵 Azure OpenAI TTS Audio Soundboard
 
-A modern, interactive text-to-speech application built with Spring Boot and Azure OpenAI's GPT-4o Mini TTS model. Transform any text into natural-sounding speech with multiple voice options and customizable styles.
+A modern, interactive text-to-speech application built with Spring Boot and Azure OpenAI's **gpt-4o-mini-tts** model (2025-03-20). Transform any text into natural-sounding speech with multiple voice options, customizable styles, and advanced tone guidance.
 
-![Azure OpenAI TTS](https://img.shields.io/badge/Azure%20OpenAI-TTS-blue)
+![Azure OpenAI TTS](https://img.shields.io/badge/Azure%20OpenAI-gpt--4o--mini--tts-blue)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.4-green)
 ![Java](https://img.shields.io/badge/Java-21-orange)
+![Azure Container Apps](https://img.shields.io/badge/Azure-Container%20Apps-blue)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
 ## ✨ Features
@@ -52,7 +53,8 @@ A modern, interactive text-to-speech application built with Spring Boot and Azur
 ### Prerequisites
 - Java 21 or higher
 - Maven 3.6+
-- Azure OpenAI account with TTS deployment
+- Azure OpenAI account with **gpt-4o-mini-tts** model deployment
+- Azure subscription with access to East US 2 or Sweden Central regions
 
 ### 1. Clone the Repository
 ```bash
@@ -66,8 +68,12 @@ Update the `.env` file with your Azure OpenAI credentials:
 AZURE_OPENAI_ENDPOINT=https://your-resource.cognitiveservices.azure.com
 AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini-tts
 AZURE_OPENAI_MODEL=gpt-4o-mini-tts
-AZURE_OPENAI_API_KEY=your-api-key-here
+AZURE_OPENAI_MODEL_VERSION=2025-03-20
+AZURE_CLIENT_ID=your-managed-identity-client-id
+AZURE_TENANT_ID=your-tenant-id
 ```
+
+> **Note**: For Azure Container Apps deployment, the application uses Managed Identity authentication. For local development, you can use API keys.
 
 ### 3. Run the Application
 ```bash
@@ -134,7 +140,9 @@ The application provides several REST endpoints for advanced usage:
 ### Technology Stack
 - **Backend**: Spring Boot 3.5.4 with Java 21
 - **Frontend**: Thymeleaf templates with modern CSS and JavaScript
-- **AI Service**: Azure OpenAI GPT-4o Mini TTS
+- **AI Service**: Azure OpenAI **gpt-4o-mini-tts** (2025-03-20) with GlobalStandard deployment
+- **Cloud Platform**: Azure Container Apps with Container Registry
+- **Authentication**: Azure Managed Identity for secure cloud access
 - **Audio Processing**: Java HttpClient with streaming support
 - **Caching**: In-memory audio store with TTL management
 
@@ -202,7 +210,23 @@ source .env
 mvn spring-boot:run
 ```
 
-### Production Build
+### Azure Container Apps (Recommended)
+Use Azure Developer CLI (azd) for seamless cloud deployment:
+
+```bash
+# Initialize and deploy
+azd init
+azd up
+```
+
+This will:
+- Deploy infrastructure using Bicep templates
+- Create Azure OpenAI resource with gpt-4o-mini-tts model
+- Set up Container Apps environment with proper networking
+- Configure Managed Identity for secure authentication
+- Deploy the application container
+
+### Manual Production Build
 ```bash
 mvn clean package
 java -jar target/tts-0.0.1-SNAPSHOT.jar
@@ -213,9 +237,6 @@ java -jar target/tts-0.0.1-SNAPSHOT.jar
 docker build -t tts-app .
 docker run -p 8080:8080 --env-file .env tts-app
 ```
-
-### Azure Container Apps
-Use the provided Bicep templates in the `infra/` directory for Azure deployment.
 
 ## 📊 Monitoring
 
@@ -258,11 +279,22 @@ mvn spring-boot:run
 - Check browser autoplay settings
 - Ensure audio format is supported
 - Verify Azure OpenAI API credentials
+- Confirm gpt-4o-mini-tts model is deployed correctly
 
 **Build Failures**
 - Ensure Java 21+ is installed
 - Verify Maven dependencies are resolved
 - Check internet connectivity for Azure services
+
+**Deployment Issues**
+- Ensure you're deploying to East US 2 or Sweden Central (supported regions)
+- Verify Azure subscription has access to OpenAI services
+- Check that Managed Identity has proper role assignments
+
+**Model Not Available**
+- gpt-4o-mini-tts is only available in East US 2 and Sweden Central
+- Ensure your Azure OpenAI resource is in a supported region
+- Verify the model version (2025-03-20) is correctly specified
 
 ### Getting Help
 - Open an issue on GitHub for bugs
