@@ -3,7 +3,7 @@ server:
 
 azure:
   openai:
-    endpoint: ${AZURE_OPENAI_ENDPOINT:https://ropreddy-5282-resource.cognitiveservices.azure.com}
+    endpoint: ${AZURE_OPENAI_ENDPOINT}
     deployment: ${AZURE_OPENAI_DEPLOYMENT:gpt-4o-mini-tts}
     model: ${AZURE_OPENAI_MODEL:gpt-4o-mini-tts}
     api-key: ${AZURE_OPENAI_API_KEY}
