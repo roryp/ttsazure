@@ -1,7 +1,7 @@
 targetScope = 'resourceGroup'
 
 @description('Primary location for all resources')
-param location string = 'eastus'
+param location string = 'eastus2'
 
 @description('Name of the environment')
 param environmentName string
