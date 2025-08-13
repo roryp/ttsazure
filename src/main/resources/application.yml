@@ -19,3 +19,11 @@ spring:
     resources:
       cache:
         period: 0
+
+# Rate limiting configuration
+app:
+  rate-limit:
+    max-requests-per-minute: ${RATE_LIMIT_REQUESTS_PER_MINUTE:10}
+    max-requests-per-hour: ${RATE_LIMIT_REQUESTS_PER_HOUR:100}
+    max-characters-per-hour: ${RATE_LIMIT_CHARACTERS_PER_HOUR:50000}
+    enabled: ${RATE_LIMIT_ENABLED:true}

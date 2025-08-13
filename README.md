@@ -37,6 +37,13 @@ This screenshot showcases the **Azure OpenAI TTS Audio Soundboard** interface, f
 - **Character Counter** with smart validation (up to 4,000 characters)
 - **Real-time Audio Streaming** with instant playback
 
+### 🛡️ **Rate Limiting & Security**
+- **Smart Rate Limiting**: 10 requests per minute, 100 requests per hour
+- **Character Limits**: 50,000 characters per hour to prevent abuse
+- **Per-Client Tracking**: Individual limits based on IP address
+- **Configurable Limits**: Adjustable via environment variables
+- **Graceful Handling**: Clear error messages when limits are exceeded
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -84,8 +91,9 @@ The application provides several REST endpoints for advanced usage:
 - `GET /api/vibes?count=12` - Get specific number of vibes
 - `GET /api/vibe/{name}` - Get specific vibe details
 
-### Health Check
-- `GET /health` - Application health and cache status
+### System Health & Rate Limits
+- `GET /health` - Application health, cache status, and rate limit configuration
+- `GET /api/rate-limit-status` - Current rate limit usage for your IP
 
 ## 🏗️ Architecture
 
@@ -147,6 +155,23 @@ private static final List<String> AVAILABLE_VOICES = List.of(
 );
 ```
 
+### Rate Limiting Configuration
+Adjust rate limits via environment variables or `application.yml`:
+```yaml
+app:
+  rate-limit:
+    max-requests-per-minute: 10
+    max-requests-per-hour: 100
+    max-characters-per-hour: 50000
+    enabled: true
+```
+
+Or use environment variables:
+- `RATE_LIMIT_REQUESTS_PER_MINUTE` - Requests per minute (default: 10)
+- `RATE_LIMIT_REQUESTS_PER_HOUR` - Requests per hour (default: 100)
+- `RATE_LIMIT_CHARACTERS_PER_HOUR` - Characters per hour (default: 50,000)
+- `RATE_LIMIT_ENABLED` - Enable/disable rate limiting (default: true)
+
 ## � Authentication & Security
 
 ### Managed Identity Authentication
@@ -173,6 +198,7 @@ This application uses **Azure Managed Identity** for secure, keyless authenticat
 - 🛡️ **No Network Exposure**: Tokens never leave the Azure security boundary
 
 ### Additional Security Features
+- **Rate Limiting**: Protects against abuse with configurable per-client limits
 - **Input Validation**: Text length and format validation
 - **Error Handling**: Graceful error messages without exposing internals
 - **CORS Support**: Configurable for different deployment environments

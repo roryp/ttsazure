@@ -1,5 +1,6 @@
 package com.ttsapp.tts;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -24,11 +25,19 @@ public class TtsController {
     private final OpenAIService openAIService;
     private final AudioStore audioStore;
     private final VibeService vibeService;
+    private final RateLimitService rateLimitService;
+    private final ClientIdentifierService clientIdentifierService;
+    private final RateLimitProperties rateLimitProperties;
 
-    public TtsController(OpenAIService openAIService, AudioStore audioStore, VibeService vibeService) {
+    public TtsController(OpenAIService openAIService, AudioStore audioStore, VibeService vibeService,
+                        RateLimitService rateLimitService, ClientIdentifierService clientIdentifierService,
+                        RateLimitProperties rateLimitProperties) {
         this.openAIService = openAIService;
         this.audioStore = audioStore;
         this.vibeService = vibeService;
+        this.rateLimitService = rateLimitService;
+        this.clientIdentifierService = clientIdentifierService;
+        this.rateLimitProperties = rateLimitProperties;
     }
 
     @GetMapping("/")
@@ -45,35 +54,61 @@ public class TtsController {
             @RequestParam(required = false) String style,
             @RequestParam String voice,
             @RequestParam(required = false, defaultValue = "mp3") String format,
+            HttpServletRequest request,
             Model model) {
         
-        logger.info("TTS request: voice={}, style={}, format={}, text_length={}", 
-                   voice, style, format, text.length());
+        String clientId = clientIdentifierService.getClientIdentifier(request);
+        logger.info("TTS request from client {}: voice={}, style={}, format={}, text_length={}", 
+                   clientId, voice, style, format, text.length());
 
         try {
             // Validate input
             if (text == null || text.trim().isEmpty()) {
                 model.addAttribute("error", "Text cannot be empty");
                 model.addAttribute("voices", AVAILABLE_VOICES);
+                model.addAttribute("vibes", vibeService.getRandomVibes(6));
                 return "index";
             }
 
             if (!AVAILABLE_VOICES.contains(voice)) {
                 model.addAttribute("error", "Invalid voice selected");
                 model.addAttribute("voices", AVAILABLE_VOICES);
+                model.addAttribute("vibes", vibeService.getRandomVibes(6));
                 return "index";
             }
 
             // Limit text length
-            if (text.length() > 1000) {
-                text = text.substring(0, 1000);
-                model.addAttribute("warning", "Text was truncated to 1000 characters");
+            if (text.length() > 4000) {
+                text = text.substring(0, 4000);
+                model.addAttribute("warning", "Text was truncated to 4000 characters");
+            }
+
+            // Rate limiting check
+            if (!rateLimitService.isAllowed(clientId, text.length())) {
+                RateLimitService.RateLimitInfo rateLimitInfo = rateLimitService.getRateLimitInfo(clientId);
+                String errorMessage = String.format(
+                    "Rate limit exceeded. You have used %d/%d requests this minute, %d/%d requests this hour, and %d/%d characters this hour. Please try again later.",
+                    rateLimitInfo.currentMinuteRequests, rateLimitInfo.maxMinuteRequests,
+                    rateLimitInfo.currentHourlyRequests, rateLimitInfo.maxHourlyRequests,
+                    rateLimitInfo.currentHourlyCharacters, rateLimitInfo.maxHourlyCharacters
+                );
+                
+                model.addAttribute("error", errorMessage);
+                model.addAttribute("voices", AVAILABLE_VOICES);
+                model.addAttribute("vibes", vibeService.getRandomVibes(6));
+                model.addAttribute("lastText", text);
+                model.addAttribute("lastVoice", voice);
+                model.addAttribute("lastStyle", style);
+                model.addAttribute("lastFormat", format);
+                model.addAttribute("rateLimitInfo", rateLimitInfo);
+                return "index";
             }
 
             // Validate format parameter
             if (!format.equals("mp3") && !format.equals("wav") && !format.equals("opus")) {
                 model.addAttribute("error", "Invalid audio format. Supported: mp3, wav, opus");
                 model.addAttribute("voices", AVAILABLE_VOICES);
+                model.addAttribute("vibes", vibeService.getRandomVibes(6));
                 return "index";
             }
 
@@ -83,8 +118,12 @@ public class TtsController {
             // Store audio
             String audioId = audioStore.store(audioData);
 
+            // Get rate limit info for display
+            RateLimitService.RateLimitInfo rateLimitInfo = rateLimitService.getRateLimitInfo(clientId);
+
             // Add attributes to model
             model.addAttribute("voices", AVAILABLE_VOICES);
+            model.addAttribute("vibes", vibeService.getRandomVibes(6));
             model.addAttribute("lastText", text);
             model.addAttribute("lastVoice", voice);
             model.addAttribute("lastStyle", style);
@@ -92,13 +131,16 @@ public class TtsController {
             model.addAttribute("audioId", audioId);
             model.addAttribute("audioSize", formatFileSize(audioData.length));
             model.addAttribute("success", "Voice generated successfully!");
+            model.addAttribute("rateLimitInfo", rateLimitInfo);
 
-            logger.info("TTS generated successfully, audio ID: {}, size: {} bytes", audioId, audioData.length);
+            logger.info("TTS generated successfully for client {}, audio ID: {}, size: {} bytes", 
+                       clientId, audioId, audioData.length);
 
         } catch (Exception e) {
-            logger.error("Error generating TTS", e);
+            logger.error("Error generating TTS for client {}", clientId, e);
             model.addAttribute("error", "Failed to generate voice: " + e.getMessage());
             model.addAttribute("voices", AVAILABLE_VOICES);
+            model.addAttribute("vibes", vibeService.getRandomVibes(6));
             model.addAttribute("lastText", text);
             model.addAttribute("lastVoice", voice);
             model.addAttribute("lastStyle", style);
@@ -157,8 +199,25 @@ public class TtsController {
 
     @GetMapping("/health")
     @ResponseBody
-    public String health() {
-        return "OK - Audio cache size: " + audioStore.size();
+    public Map<String, Object> health() {
+        return Map.of(
+            "status", "OK",
+            "audioCacheSize", audioStore.size(),
+            "rateLimits", Map.of(
+                "enabled", rateLimitProperties.isEnabled(),
+                "maxRequestsPerMinute", rateLimitProperties.getMaxRequestsPerMinute(),
+                "maxRequestsPerHour", rateLimitProperties.getMaxRequestsPerHour(),
+                "maxCharactersPerHour", rateLimitProperties.getMaxCharactersPerHour()
+            )
+        );
+    }
+
+    @GetMapping("/api/rate-limit-status")
+    @ResponseBody
+    public ResponseEntity<RateLimitService.RateLimitInfo> getRateLimitStatus(HttpServletRequest request) {
+        String clientId = clientIdentifierService.getClientIdentifier(request);
+        RateLimitService.RateLimitInfo rateLimitInfo = rateLimitService.getRateLimitInfo(clientId);
+        return ResponseEntity.ok(rateLimitInfo);
     }
 
     @GetMapping("/api/vibes")
@@ -181,30 +240,59 @@ public class TtsController {
             @RequestParam String text,
             @RequestParam String voice,
             @RequestParam(required = false) String style,
-            @RequestParam(required = false, defaultValue = "mp3") String format) {
+            @RequestParam(required = false, defaultValue = "mp3") String format,
+            HttpServletRequest request) {
         
+        String clientId = clientIdentifierService.getClientIdentifier(request);
+        logger.info("Quick TTS request from client {}: voice={}, style={}, format={}, text_length={}", 
+                   clientId, voice, style, format, text.length());
+
         try {
             if (text == null || text.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Text cannot be empty");
+                return ResponseEntity.badRequest().body(Map.of("error", "Text cannot be empty"));
             }
 
             if (!AVAILABLE_VOICES.contains(voice)) {
-                return ResponseEntity.badRequest().body("Invalid voice selected");
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid voice selected"));
+            }
+
+            // Rate limiting check
+            if (!rateLimitService.isAllowed(clientId, text.length())) {
+                RateLimitService.RateLimitInfo rateLimitInfo = rateLimitService.getRateLimitInfo(clientId);
+                return ResponseEntity.status(429).body(Map.of(
+                    "error", "Rate limit exceeded",
+                    "details", String.format(
+                        "You have used %d/%d requests this minute, %d/%d requests this hour, and %d/%d characters this hour",
+                        rateLimitInfo.currentMinuteRequests, rateLimitInfo.maxMinuteRequests,
+                        rateLimitInfo.currentHourlyRequests, rateLimitInfo.maxHourlyRequests,
+                        rateLimitInfo.currentHourlyCharacters, rateLimitInfo.maxHourlyCharacters
+                    ),
+                    "remainingMinuteRequests", rateLimitInfo.getRemainingMinuteRequests(),
+                    "remainingHourlyRequests", rateLimitInfo.getRemainingHourlyRequests(),
+                    "remainingHourlyCharacters", rateLimitInfo.getRemainingHourlyCharacters()
+                ));
             }
 
             // Generate speech
             byte[] audioData = openAIService.generateSpeech(text, voice, style, format);
             String audioId = audioStore.store(audioData);
 
+            RateLimitService.RateLimitInfo rateLimitInfo = rateLimitService.getRateLimitInfo(clientId);
+
             return ResponseEntity.ok().body(Map.of(
                     "audioId", audioId,
                     "audioUrl", "/audio/" + audioId + "?format=" + format,
-                    "size", audioData.length
+                    "size", audioData.length,
+                    "rateLimitInfo", Map.of(
+                        "remainingMinuteRequests", rateLimitInfo.getRemainingMinuteRequests(),
+                        "remainingHourlyRequests", rateLimitInfo.getRemainingHourlyRequests(),
+                        "remainingHourlyCharacters", rateLimitInfo.getRemainingHourlyCharacters()
+                    )
             ));
 
         } catch (Exception e) {
-            logger.error("Error generating quick TTS", e);
-            return ResponseEntity.internalServerError().body("Failed to generate voice: " + e.getMessage());
+            logger.error("Error generating quick TTS for client {}", clientId, e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to generate voice: " + e.getMessage()));
         }
     }
 
