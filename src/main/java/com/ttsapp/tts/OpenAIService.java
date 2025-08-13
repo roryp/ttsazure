@@ -1,5 +1,9 @@
 package com.ttsapp.tts;
 
+import com.azure.core.credential.AccessToken;
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.credential.TokenRequestContext;
+import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,29 +24,30 @@ public class OpenAIService {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenAIService.class);
     private static final String API_VERSION = "2025-03-01-preview";
+    private static final String COGNITIVE_SERVICES_SCOPE = "https://cognitiveservices.azure.com/.default";
 
     private final String endpoint;
     private final String deployment;
     private final String model;
-    private final String apiKey;
+    private final TokenCredential credential;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
     public OpenAIService(
             @Value("${azure.openai.endpoint}") String endpoint,
             @Value("${azure.openai.deployment}") String deployment,
-            @Value("${azure.openai.model}") String model,
-            @Value("${azure.openai.api-key}") String apiKey) {
+            @Value("${azure.openai.model}") String model) {
         this.endpoint = endpoint;
         this.deployment = deployment;
         this.model = model;
-        this.apiKey = apiKey;
+        this.credential = new DefaultAzureCredentialBuilder()
+                .build();
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
         this.objectMapper = new ObjectMapper();
         
-        logger.info("OpenAI Service initialized with endpoint: {}, deployment: {}, model: {}", 
+        logger.info("OpenAI Service initialized with endpoint: {}, deployment: {}, model: {} using managed identity", 
                     endpoint, deployment, model);
     }
 
@@ -52,7 +57,18 @@ public class OpenAIService {
 
     public byte[] generateSpeech(String text, String voice, String style, String format) throws IOException, InterruptedException {
         logger.info("Generating speech for text length: {}, voice: {}, style: {}, format: {}", 
-                text.length(), voice, style, format);        // Process text for better speech synthesis
+                text.length(), voice, style, format);
+        
+        // Get access token for Azure Cognitive Services
+        TokenRequestContext tokenRequestContext = new TokenRequestContext()
+                .addScopes(COGNITIVE_SERVICES_SCOPE);
+        AccessToken token = credential.getToken(tokenRequestContext).block();
+        
+        if (token == null) {
+            throw new RuntimeException("Failed to obtain access token from managed identity");
+        }
+        
+        // Process text for better speech synthesis
         String processedText = processTextForSpeech(text);
         logger.debug("Processed text: {}", processedText);
 
@@ -78,7 +94,7 @@ public class OpenAIService {
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .header("api-key", apiKey)
+                .header("Authorization", "Bearer " + token.getToken())
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
                 .timeout(Duration.ofMinutes(2))
