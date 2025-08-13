@@ -73,7 +73,7 @@ That's it! The `azd up` command will:
 - ✅ Deploy the gpt-4o-mini model with TTS support (version 2025-03-20)
 - ✅ Set up Container Registry for your app
 - ✅ Create Container Apps environment
-- ✅ Configure Managed Identity for secure authentication
+- ✅ Configure Managed Identity with token-based authentication
 - ✅ Build and deploy your application
 - ✅ Provide you with the live application URL
 
@@ -145,7 +145,7 @@ The application provides several REST endpoints for advanced usage:
 - **Frontend**: Thymeleaf templates with modern CSS and JavaScript
 - **AI Service**: Azure OpenAI **gpt-4o-mini-tts** (2025-03-20) with GlobalStandard deployment
 - **Cloud Platform**: Azure Container Apps with Container Registry
-- **Authentication**: Azure Managed Identity for secure cloud access
+- **Authentication**: Azure Managed Identity with token-based authentication (no API keys)
 - **Audio Processing**: Java HttpClient with streaming support
 - **Caching**: In-memory audio store with TTL management
 
@@ -157,15 +157,15 @@ ttsazure/
 │   │   ├── java/com/ttsapp/tts/
 │   │   │   ├── TtsApplication.java      # Main application
 │   │   │   ├── TtsController.java       # Web controller
-│   │   │   ├── OpenAIService.java       # Azure OpenAI integration
+│   │   │   ├── OpenAIService.java       # Azure OpenAI integration (with managed identity)
 │   │   │   ├── AudioStore.java          # Audio caching
 │   │   │   └── VibeService.java         # Vibe management
 │   │   └── resources/
 │   │       ├── templates/index.html     # Main UI template
 │   │       ├── static/styles.css        # Modern styling
 │   │       ├── vibes.json              # Vibe configurations
-│   │       └── application.yml         # Spring configuration
-├── .env                                 # Environment variables
+│   │       └── application.yml         # Spring configuration (no secrets)
+├── infra/                              # Azure infrastructure (Bicep)
 ├── pom.xml                             # Maven dependencies
 └── README.md                           # This file
 ```
@@ -198,9 +198,39 @@ private static final List<String> AVAILABLE_VOICES = List.of(
 );
 ```
 
-## 🔒 Security
+## � Authentication & Security
 
-- **Environment Variables**: Sensitive data stored in `.env` (gitignored)
+### Managed Identity Authentication
+This application uses **Azure Managed Identity** for secure, keyless authentication:
+
+- **No API Keys**: Zero secrets stored in code, configuration, or environment variables
+- **Automatic Token Management**: Azure handles token generation, rotation, and renewal
+- **DefaultAzureCredential**: Uses the standard Azure identity library for seamless authentication
+- **Bearer Token Authentication**: Each API call obtains a fresh token for `https://cognitiveservices.azure.com`
+- **RBAC Integration**: Managed identity has minimal required permissions (Cognitive Services OpenAI User)
+
+### How It Works
+1. **Container Apps assigns** a managed identity to the application
+2. **Application requests** an access token using `DefaultAzureCredential`
+3. **Azure AD issues** a bearer token for the Cognitive Services scope
+4. **API calls use** the token in `Authorization: Bearer <token>` headers
+5. **Tokens auto-refresh** when they expire (no manual intervention needed)
+
+### Security Benefits
+- 🔒 **Zero Secret Management**: No keys to rotate, store, or secure
+- 🔄 **Automatic Rotation**: Tokens refresh automatically every hour
+- 🎯 **Least Privilege**: Identity has only the minimum required permissions
+- 📊 **Audit Trail**: All authentication events logged in Azure AD
+- 🛡️ **No Network Exposure**: Tokens never leave the Azure security boundary
+
+## �🔒 Additional Security
+
+## 🔒 Additional Security
+
+- **Managed Identity Authentication**: Uses Azure DefaultAzureCredential with automatic token rotation
+- **No API Keys**: Zero secrets stored in configuration or environment variables
+- **Token-Based Auth**: Bearer tokens obtained dynamically for each API call
+- **RBAC Permissions**: Minimal required permissions with Cognitive Services OpenAI User role
 - **Input Validation**: Text length and format validation
 - **Error Handling**: Graceful error messages without exposing internals
 - **CORS Support**: Configurable for different deployment environments
@@ -218,7 +248,7 @@ azd up
 This single command handles:
 - 🏗️ **Infrastructure Creation**: Azure OpenAI, Container Registry, Container Apps
 - 🤖 **AI Model Deployment**: gpt-4o-mini with TTS support (2025-03-20)
-- 🔒 **Security Setup**: Managed Identity, RBAC roles, secure authentication
+- 🔒 **Security Setup**: Managed Identity, RBAC roles, token-based authentication
 - 📦 **Application Build**: Containerizes and deploys your Spring Boot app
 - 🌐 **Network Configuration**: Public endpoints with CORS and health checks
 
@@ -243,9 +273,12 @@ For development and testing:
 # Ensure Java 21+ is installed
 java --version
 
-# Run locally (connects to Azure resources)
+# Run locally (connects to Azure resources using your Azure CLI login)
+az login  # Login to Azure first
 mvn spring-boot:run
 ```
+
+**Note**: Local development uses your Azure CLI credentials through `DefaultAzureCredential`. No API keys needed!
 
 ### Production Updates
 ```bash
@@ -310,7 +343,17 @@ azd config get defaults.subscription
 
 # Set specific subscription if needed
 azd config set defaults.subscription <subscription-id>
+
+# For local development, ensure Azure CLI is logged in
+az login
+az account show  # Verify correct subscription
 ```
+
+**Managed Identity Issues**
+- Verify the managed identity has "Cognitive Services OpenAI User" role
+- Check that the Container App is using the correct managed identity
+- Ensure the Azure OpenAI resource is in the same subscription
+- Use `azd monitor` to check authentication logs
 
 **Deployment Failures**
 - Ensure you have Contributor role on the Azure subscription
