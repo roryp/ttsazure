@@ -8,6 +8,59 @@ A modern, interactive text-to-speech application built with Spring Boot and Azur
 ![Azure Container Apps](https://img.shields.io/badge/Azure-Container%20Apps-blue)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
+## 🎬 Live Demo
+
+![TTS Azure Application Demo](images/tts-application-demo.webp)
+
+### 📸 What You're Seeing
+
+This screenshot showcases the **Azure OpenAI TTS Audio Soundboard** in action, demonstrating the modern, intuitive interface that makes text-to-speech generation effortless and engaging:
+
+#### 🎤 **Voice Selection Panel (Top Section)**
+- **11 Premium Voice Options**: The interface displays all available Azure OpenAI voices including Alloy, Ash, Ballad, Coral, Echo, Fable, Nova, Onyx, Sage, Shimmer, and Verse
+- **Interactive Voice Buttons**: Each voice is represented by a sleek, modern button with hover effects and visual feedback
+- **Selected Voice Highlighting**: The currently selected voice (likely highlighted in a different color) shows which voice will be used for generation
+- **Random Voice Option**: The "Random" button allows users to let the system choose a voice automatically for variety
+
+#### 🎭 **Vibe System Panel (Middle Section)**
+- **12 Curated Vibes**: The demo shows the sophisticated vibe selection system with options like:
+  - **Excited** - For high-energy, enthusiastic delivery
+  - **Calm** - For peaceful, soothing tones
+  - **Professional** - For clear, authoritative business communication
+  - **Friendly** - For warm, approachable conversation
+  - **Mysterious** - For enigmatic, intriguing atmosphere
+  - **Dramatic** - For theatrical, compelling presentations
+  - And 6 more carefully crafted emotional styles
+- **Shuffle Functionality**: The "🎲 Shuffle Vibes" button demonstrates how users can discover new vibe combinations
+- **Sample Scripts**: Each vibe comes with pre-written sample text to help users get started quickly
+- **Visual Vibe Cards**: Clean, organized layout showing vibe names, descriptions, and sample scripts
+
+#### 📝 **Text Input & Controls (Bottom Section)**
+- **Large Text Area**: Spacious input field that can handle up to 4,000 characters of text
+- **Character Counter**: Real-time character count display to help users stay within limits
+- **Smart Validation**: Visual indicators for text length and format validation
+- **Vibe Integration**: Users can quickly populate the text area with sample scripts from selected vibes
+
+#### 🎵 **Audio Generation Controls**
+- **Format Selection**: Options for MP3 (recommended), WAV (high quality), and Opus (compact) audio formats
+- **Generate Button**: Prominent "🎵 Generate Voice" button that triggers the Azure OpenAI TTS API
+- **Progress Indicators**: Visual feedback during audio generation process
+- **Auto-play Support**: Generated audio automatically plays when ready (with browser fallback support)
+
+#### 🎨 **Design Excellence**
+- **Soundboard Aesthetic**: The interface is inspired by professional audio mixing boards and DJ equipment
+- **Modern Material Design**: Clean lines, subtle shadows, and smooth animations create a premium feel
+- **Responsive Layout**: The design adapts beautifully to desktop, tablet, and mobile devices
+- **Accessibility Features**: High contrast ratios, keyboard navigation support, and screen reader compatibility
+- **Color Coordination**: Thoughtful color scheme that enhances usability without overwhelming the user
+
+#### 🔧 **Technical Integration Highlights**
+- **Real-time Processing**: Seamless integration with Azure OpenAI's gpt-4o-mini-tts model (2025-03-20)
+- **Managed Identity Security**: No API keys visible - everything secured through Azure Managed Identity
+- **Container Apps Deployment**: Running on Azure Container Apps for scalability and reliability
+- **Spring Boot Backend**: Robust Java backend handling all API interactions and audio processing
+- **Streaming Audio**: Efficient audio delivery with download options and playback controls
+
 ## ✨ Features
 
 ### 🎤 **Voice Selection**
