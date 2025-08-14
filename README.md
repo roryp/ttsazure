@@ -36,6 +36,7 @@ This screenshot showcases the **Azure OpenAI TTS Audio Soundboard** interface, f
 - **Modern Soundboard Design** with responsive layout
 - **Character Counter** with smart validation (up to 4,000 characters)
 - **Real-time Audio Streaming** with instant playback
+- **Always-On Service**: Maintains 1 replica minimum for instant response (scales to 3)
 
 ### 🛡️ **Rate Limiting & Security**
 - **Smart Rate Limiting**: 10 requests per minute, 100 requests per hour
