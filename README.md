@@ -12,6 +12,21 @@ A modern, interactive text-to-speech application built with Spring Boot and Azur
 
 ![TTS Azure Application Demo](images/tts-application-demo.webp)
 
+## 🎧 Demo audio — "Sarcastic" (play & download)
+
+Below is the final demo audio used in the screenshot. Play it in your browser or download the MP3.
+
+<audio controls>
+  <source src="sarcastic.mp3" type="audio/mpeg">
+  Your browser does not support the audio element. You can <a href="sarcastic.mp3">download the MP3</a>.
+</audio>
+
+<p>
+  <a href="sarcastic.mp3" download="ttsazure-sarcastic-demo.mp3" style="display:inline-block;margin-top:8px;padding:8px 12px;background:#0366d6;color:#fff;border-radius:6px;text-decoration:none;">
+    ⬇️ Download the "Sarcastic" demo (MP3)
+  </a>
+</p>
+
 ### 📸 What You're Seeing
 
 This screenshot showcases the **Azure OpenAI TTS Audio Soundboard** interface, featuring a modern soundboard design with voice selection buttons, vibe system controls, text input area, and audio generation controls. The application transforms text-to-speech generation into an intuitive, visual experience.
@@ -350,3 +365,18 @@ azd down
 - Use `azd monitor` to view application logs
 - Review Azure OpenAI documentation for API limits
 - Check deployment status with `azd env get-values`
+
+## 🎧 Final demo audio — "Sarcastic" (play & download)
+
+Below is the final downloadable creation used in the screenshot/demo. Use the player to listen in your browser, or click the download link to save the MP3.
+
+<audio controls>
+  <source src="sarcastic.mp3" type="audio/mpeg">
+  Your browser does not support the audio element. You can <a href="sarcastic.mp3">download the MP3</a>.
+</audio>
+
+<p>
+  <a href="sarcastic.mp3" download="ttsazure-sarcastic-demo.mp3" style="display:inline-block;margin-top:8px;padding:8px 12px;background:#0366d6;color:#fff;border-radius:6px;text-decoration:none;">
+    ⬇️ Download the "Sarcastic" demo (MP3)
+  </a>
+</p>
