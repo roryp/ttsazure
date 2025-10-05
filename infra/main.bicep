@@ -29,13 +29,13 @@ param openAiAccountName string = ''
 param openAiSku string = 'S0'
 
 @description('Name of the OpenAI deployment')
-param openAiDeploymentName string = 'gpt-4o-mini-tts'
+param openAiDeploymentName string = 'gpt-audio'
 
 @description('OpenAI model to deploy')
-param openAiModelName string = 'gpt-4o-mini-tts'
+param openAiModelName string = 'gpt-audio'
 
-@description('OpenAI model version with TTS support')
-param openAiModelVersion string = '2025-03-20'
+@description('OpenAI model version with audio support')
+param openAiModelVersion string = '2025-08-28'
 
 @description('OpenAI model capacity (TPM in thousands)')
 param openAiModelCapacity int = 10

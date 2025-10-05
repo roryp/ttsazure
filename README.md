@@ -1,8 +1,8 @@
 # 🎵 Azure OpenAI TTS Audio Soundboard
 
-A modern, interactive text-to-speech application built with Spring Boot and Azure OpenAI's **gpt-4o-mini-tts** model (2025-03-20). Transform any text into natural-sounding speech with multiple voice options, customizable styles, and advanced tone guidance.
+A modern, interactive text-to-speech application built with Spring Boot and Azure OpenAI's **gpt-audio** model (2025-08-28). Transform any text into natural-sounding speech with multiple voice options, customizable styles, and advanced tone guidance.
 
-![Azure OpenAI TTS](https://img.shields.io/badge/Azure%20OpenAI-gpt--4o--mini--tts-blue)
+![Azure OpenAI TTS](https://img.shields.io/badge/Azure%20OpenAI-gpt--audio-blue)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.4-green)
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![Azure Container Apps](https://img.shields.io/badge/Azure-Container%20Apps-blue)
@@ -116,7 +116,7 @@ The application provides several REST endpoints for advanced usage:
 ### Technology Stack
 - **Backend**: Spring Boot 3.5.4 with Java 21
 - **Frontend**: Thymeleaf templates with modern CSS and JavaScript
-- **AI Service**: Azure OpenAI **gpt-4o-mini-tts** (2025-03-20) with GlobalStandard deployment
+- **AI Service**: Azure OpenAI **gpt-audio** (2025-08-28) with GlobalStandard deployment
 - **Cloud Platform**: Azure Container Apps with Container Registry
 - **Authentication**: Azure Managed Identity with token-based authentication (no API keys)
 - **Audio Processing**: Java HttpClient with streaming support
@@ -231,7 +231,7 @@ azd up
 
 This single command handles:
 - 🏗️ **Infrastructure Creation**: Azure OpenAI, Container Registry, Container Apps
-- 🤖 **AI Model Deployment**: gpt-4o-mini with TTS support (2025-03-20)
+- 🤖 **AI Model Deployment**: gpt-audio with audio support (2025-08-28)
 - 🔒 **Security Setup**: Managed Identity, RBAC roles, token-based authentication
 - 📦 **Application Build**: Containerizes and deploys your Spring Boot app
 - 🌐 **Network Configuration**: Public endpoints with CORS and health checks
@@ -346,7 +346,7 @@ az account show  # Verify correct subscription
 - Use `azd monitor` to check deployment logs
 
 **Model Availability**
-- gpt-4o-mini with TTS is only available in East US and East US 2
+- gpt-audio is available in East US and East US 2
 - The infrastructure automatically selects the correct region
 - No manual model deployment needed - azd handles everything
 

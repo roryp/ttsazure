@@ -81,3 +81,4 @@ Thumbs.db
 # Docker
 .dockerignore
 .azure
+test-gpt-audio.sh

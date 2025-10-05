@@ -23,11 +23,9 @@ import java.util.Map;
 public class OpenAIService {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenAIService.class);
-    private static final String API_VERSION = "2025-03-01-preview";
     private static final String COGNITIVE_SERVICES_SCOPE = "https://cognitiveservices.azure.com/.default";
 
     private final String endpoint;
-    private final String deployment;
     private final String model;
     private final TokenCredential credential;
     private final HttpClient httpClient;
@@ -38,7 +36,6 @@ public class OpenAIService {
             @Value("${azure.openai.deployment}") String deployment,
             @Value("${azure.openai.model}") String model) {
         this.endpoint = endpoint;
-        this.deployment = deployment;
         this.model = model;
         this.credential = new DefaultAzureCredentialBuilder()
                 .build();
@@ -68,29 +65,46 @@ public class OpenAIService {
             throw new RuntimeException("Failed to obtain access token from managed identity");
         }
         
-        // Process text for better speech synthesis
-        String processedText = processTextForSpeech(text);
-        logger.debug("Processed text: {}", processedText);
+        // Process text for better speech synthesis (less aggressive for gpt-audio)
+        String processedText = text.trim();
+        logger.debug("Text to speak: {}", processedText);
 
-        // Prepare request body with all parameters
+        // Build messages array for chat completions
+        java.util.List<Map<String, String>> messages = new java.util.ArrayList<>();
+        
+        // Add system message with voice styling instructions if style is provided
+        if (style != null && !style.trim().isEmpty()) {
+            Map<String, String> systemMessage = new HashMap<>();
+            systemMessage.put("role", "system");
+            systemMessage.put("content", style.trim());
+            messages.add(systemMessage);
+            logger.debug("Using style instructions in system message: {}", style.trim());
+        }
+        
+        // Add user message with the text to speak
+        Map<String, String> userMessage = new HashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", processedText);
+        messages.add(userMessage);
+
+        // Prepare audio configuration
+        Map<String, String> audioConfig = new HashMap<>();
+        audioConfig.put("voice", voice);
+        audioConfig.put("format", format);
+
+        // Prepare request body for chat completions with audio
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", model);
-        requestBody.put("input", processedText);
-        requestBody.put("voice", voice);
-        requestBody.put("response_format", format);
-
-        // Add instructions parameter if style is provided
-        if (style != null && !style.trim().isEmpty()) {
-            requestBody.put("instructions", style.trim());
-            logger.debug("Using style instructions: {}", style.trim());
-        }
+        requestBody.put("messages", messages);
+        requestBody.put("modalities", new String[]{"text", "audio"});
+        requestBody.put("audio", audioConfig);
+        requestBody.put("max_tokens", 1000);
 
         String requestBodyJson = objectMapper.writeValueAsString(requestBody);
         logger.debug("Request body: {}", requestBodyJson);
 
-        // Build the request
-        String url = String.format("%s/openai/deployments/%s/audio/speech?api-version=%s", 
-                                   endpoint, deployment, API_VERSION);
+        // Build the request using chat completions endpoint
+        String url = String.format("%s/openai/v1/chat/completions", endpoint);
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -101,45 +115,46 @@ public class OpenAIService {
                 .build();
 
         // Send the request
-        HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() != 200) {
-            String errorBody = new String(response.body());
+            String errorBody = response.body();
             logger.error("OpenAI API error: {} - {}", response.statusCode(), errorBody);
             throw new RuntimeException("OpenAI API error: " + response.statusCode() + " - " + errorBody);
         }
 
-        byte[] audioData = response.body();
+        // Parse the JSON response to extract audio data
+        @SuppressWarnings("unchecked")
+        Map<String, Object> responseJson = objectMapper.readValue(response.body(), Map.class);
+        
+        // Extract audio data from choices[0].message.audio.data
+        @SuppressWarnings("unchecked")
+        java.util.List<Map<String, Object>> choices = (java.util.List<Map<String, Object>>) responseJson.get("choices");
+        if (choices == null || choices.isEmpty()) {
+            throw new RuntimeException("No choices in response");
+        }
+        
+        @SuppressWarnings("unchecked")
+        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+        if (message == null) {
+            throw new RuntimeException("No message in response");
+        }
+        
+        @SuppressWarnings("unchecked")
+        Map<String, Object> audio = (Map<String, Object>) message.get("audio");
+        if (audio == null) {
+            throw new RuntimeException("No audio in response");
+        }
+        
+        String base64Audio = (String) audio.get("data");
+        if (base64Audio == null || base64Audio.isEmpty()) {
+            throw new RuntimeException("No audio data in response");
+        }
+
+        // Decode base64 audio data
+        byte[] audioData = java.util.Base64.getDecoder().decode(base64Audio);
         logger.info("Successfully generated speech audio, size: {} bytes", audioData.length);
         
         return audioData;
-    }
-
-    /**
-     * Process text for better speech synthesis
-     */
-    private String processTextForSpeech(String text) {
-        if (text == null || text.trim().isEmpty()) {
-            return text;
-        }
-
-        String processedText = text;
-        
-        // Escape special XML characters for better TTS processing
-        processedText = processedText
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace("\"", "&quot;")
-            .replace("'", "&apos;");
-        
-        // Add natural pauses for better speech flow
-        processedText = processedText
-            .replace(". ", ". <break time=\"0.5s\"/> ")
-            .replace("! ", "! <break time=\"0.5s\"/> ")
-            .replace("? ", "? <break time=\"0.5s\"/> ")
-            .replace(", ", ", <break time=\"0.2s\"/> ");
-        
-        return processedText;
     }
 }
