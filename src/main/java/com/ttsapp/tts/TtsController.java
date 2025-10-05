@@ -58,7 +58,7 @@ public class TtsController {
             Model model) {
         
         String clientId = clientIdentifierService.getClientIdentifier(request);
-        logger.info("TTS request from client {}: voice={}, style={}, format={}, text_length={}", 
+        logger.info("TTS request from client {}: voice='{}', style={}, format={}, text_length={}", 
                    clientId, voice, style, format, text.length());
 
         try {
@@ -70,12 +70,22 @@ public class TtsController {
                 return "index";
             }
 
-            if (!AVAILABLE_VOICES.contains(voice)) {
-                model.addAttribute("error", "Invalid voice selected");
+            // Normalize voice input (trim and lowercase for comparison)
+            String normalizedVoice = voice.trim().toLowerCase();
+            boolean voiceValid = AVAILABLE_VOICES.stream()
+                .anyMatch(v -> v.equalsIgnoreCase(normalizedVoice));
+            
+            if (!voiceValid) {
+                logger.warn("Invalid voice '{}' submitted by client {}. Available voices: {}", 
+                           voice, clientId, AVAILABLE_VOICES);
+                model.addAttribute("error", "Invalid voice selected: " + voice + ". Please select from the available voices.");
                 model.addAttribute("voices", AVAILABLE_VOICES);
                 model.addAttribute("vibes", vibeService.getRandomVibes(6));
                 return "index";
             }
+            
+            // Use the normalized voice for API call
+            voice = normalizedVoice;
 
             // Limit text length
             if (text.length() > 4000) {
@@ -244,7 +254,7 @@ public class TtsController {
             HttpServletRequest request) {
         
         String clientId = clientIdentifierService.getClientIdentifier(request);
-        logger.info("Quick TTS request from client {}: voice={}, style={}, format={}, text_length={}", 
+        logger.info("Quick TTS request from client {}: voice='{}', style={}, format={}, text_length={}", 
                    clientId, voice, style, format, text.length());
 
         try {
@@ -252,9 +262,22 @@ public class TtsController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Text cannot be empty"));
             }
 
-            if (!AVAILABLE_VOICES.contains(voice)) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Invalid voice selected"));
+            // Normalize voice input (trim and lowercase for comparison)
+            String normalizedVoice = voice.trim().toLowerCase();
+            boolean voiceValid = AVAILABLE_VOICES.stream()
+                .anyMatch(v -> v.equalsIgnoreCase(normalizedVoice));
+            
+            if (!voiceValid) {
+                logger.warn("Invalid voice '{}' submitted by client {} via quick-tts. Available voices: {}", 
+                           voice, clientId, AVAILABLE_VOICES);
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Invalid voice selected: " + voice,
+                    "availableVoices", AVAILABLE_VOICES
+                ));
             }
+            
+            // Use the normalized voice for API call
+            voice = normalizedVoice;
 
             // Rate limiting check
             if (!rateLimitService.isAllowed(clientId, text.length())) {

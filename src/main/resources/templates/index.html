@@ -134,6 +134,9 @@
             <div class="spinner"></div>
             <span>Generating voice...</span>
         </div>
+        
+        <!-- Hidden data for JavaScript -->
+        <script type="application/json" id="voices-data">/*[[${voices}]]*/</script>
     </div>
 
     <script>
@@ -141,9 +144,27 @@
         let selectedVoice = '';
         let selectedVibe = null;
         let allVibes = /*[[${allVibes}]]*/ [];
+        let availableVoices = [];
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
+            // Get voices from the JSON script tag
+            const voicesDataElement = document.getElementById('voices-data');
+            if (voicesDataElement && voicesDataElement.textContent) {
+                try {
+                    availableVoices = JSON.parse(voicesDataElement.textContent);
+                    console.log('Available voices loaded:', availableVoices);
+                } catch (e) {
+                    console.error('Error parsing voices data:', e);
+                    // Fallback to hardcoded voices
+                    availableVoices = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer', 'verse'];
+                }
+            } else {
+                // Fallback to hardcoded voices
+                availableVoices = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer', 'verse'];
+                console.log('Using fallback voices:', availableVoices);
+            }
+            
             initializeVoiceButtons();
             initializeVibeButtons();
             initializeForm();
@@ -164,18 +185,22 @@
                     this.classList.add('active');
                     
                     const voice = this.dataset.voice;
+                    console.log('Voice button clicked:', voice);
+                    
                     if (voice === 'random') {
-                        // Select random voice
-                        const voices = /*[[${voices}]]*/ [];
-                        const randomVoice = voices[Math.floor(Math.random() * voices.length)];
+                        // Select random voice - use availableVoices array
+                        const randomVoice = availableVoices[Math.floor(Math.random() * availableVoices.length)];
                         selectedVoice = randomVoice;
                         voiceDisplay.textContent = `Voice: ${randomVoice.charAt(0).toUpperCase() + randomVoice.slice(1)} (Random)`;
+                        console.log('Random voice selected:', randomVoice);
                     } else {
                         selectedVoice = voice;
                         voiceDisplay.textContent = `Voice: ${voice.charAt(0).toUpperCase() + voice.slice(1)}`;
+                        console.log('Voice selected:', voice);
                     }
                     
                     document.getElementById('selectedVoice').value = selectedVoice;
+                    console.log('Hidden input value set to:', selectedVoice);
                 });
             });
         }
@@ -258,12 +283,41 @@
         // Form handling
         function initializeForm() {
             document.getElementById('ttsForm').addEventListener('submit', function(e) {
-                if (!selectedVoice) {
+                // Check if a voice button is active (including random)
+                const activeVoiceButton = document.querySelector('.voice-button-new.active');
+                
+                if (!activeVoiceButton) {
                     e.preventDefault();
                     alert('Please select a voice first!');
                     return;
                 }
                 
+                // Get the voice from the active button
+                const voiceFromButton = activeVoiceButton.dataset.voice;
+                let finalVoice = '';
+                
+                // If random was selected, pick a random voice now
+                if (voiceFromButton === 'random') {
+                    finalVoice = availableVoices[Math.floor(Math.random() * availableVoices.length)];
+                    console.log('Random voice selected for submission:', finalVoice);
+                } else {
+                    // Use the voice from the button directly
+                    finalVoice = voiceFromButton;
+                    console.log('Voice selected for submission:', finalVoice);
+                }
+                
+                // Set the hidden input value
+                document.getElementById('selectedVoice').value = finalVoice;
+                
+                // Final validation - make sure we have a valid voice string
+                if (!finalVoice || finalVoice.trim() === '') {
+                    e.preventDefault();
+                    console.error('Voice validation failed. Final voice value:', finalVoice);
+                    alert('Error selecting voice. Please try selecting a voice again.');
+                    return;
+                }
+                
+                console.log('Form submitting with voice:', finalVoice);
                 document.getElementById('loading').style.display = 'flex';
             });
         }
